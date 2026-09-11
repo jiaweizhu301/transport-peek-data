@@ -1,0 +1,90 @@
+# M0-0.7(b) / M1-E 账① 的早高峰采样器
+#
+# 为什么需要它：Worker 的刷新是**请求触发**的 —— 没有客户端流量就不会刷新，
+# 也就没有 cpuTime 样本可测。而 checklist 的账① 明确要求「样本必须含早高峰」
+# （白天 feed 更大、解码更贵，夜间样本会低估）。M1 收尾时还没有真实用户，
+# 所以需要有人在悉尼早高峰去戳一下。
+#
+# 为什么放在这里而不是本机：用户的电脑会关机，手机上跑后台轮询不可靠。
+# 公开仓的 Actions 分钟数无限、24 小时在线，是这件事最省的载体。
+#
+# 数据不用当场收集 —— Cloudflare 的 workersInvocationsAdaptive 会保留历史，
+# 事后任何时候跑 `worker/scripts/cpu-limit-report.sh` 都能按小时把
+# cpuTimeP50/P90/P99 与 status=exceededResources 拉出来。本工作流只负责**制造流量**。
+#
+name: peak-sample
+
+on:
+  schedule:
+    # 悉尼早高峰 07:00–09:00。cron 是 UTC，且 GitHub 不认时区，所以两条都挂上：
+    #   AEDT（10 月–4 月，UTC+11）：20:00 UTC = 悉尼 07:00
+    #   AEST（4 月–10 月，UTC+10）：21:00 UTC = 悉尼 07:00
+    # 另一条那天会落在悉尼 08:00，仍在高峰区间内，等于白拿第二个样本。
+    # 星期：悉尼的周一–周五 = UTC 的周日–周四（高峰是工作日现象，周末不采）。
+    - cron: "0 20 * * 0-4"
+    - cron: "0 21 * * 0-4"
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "轮询多少分钟（默认 22，够 20 次刷新）"
+        required: false
+        default: "22"
+
+# 同一时刻只跑一个，避免两条 cron 在 DST 边界重叠时互相污染样本
+concurrency:
+  group: peak-sample
+  cancel-in-progress: false
+
+jobs:
+  poke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: 制造早高峰流量
+        env:
+          WORKER: https://transportpeek-rt.vaporrainbow.workers.dev
+          # Central(200060) 与 Town Hall(200070)：全网最忙的两个火车父站，
+          # 早高峰的 stop_time_update 最多，是账① 最坏情况的代表。
+          TRAIN_STOPS: "200060,200070"
+          # Metro 的 Central（200060 在两个 feed 里都是父站）。注意：Metro 的父站只有 21 个，
+          # 写错 id 不会报错、只会一直返回空数组 —— 采不到样本还看不出来。此值已对 D3 产物核过。
+          METRO_STOPS: "200060"
+        run: |
+          set -uo pipefail
+          MINUTES="${{ github.event.inputs.minutes || '22' }}"
+          # 刷新 TTL 是 60 秒，所以每 65 秒打一轮才会真的触发一次新刷新；
+          # 打得更密只会命中缓存，白白增加请求数却拿不到刷新样本。
+          ROUNDS=$(( MINUTES * 60 / 65 ))
+          echo "悉尼时间 $(TZ=Australia/Sydney date '+%F %H:%M %Z')，计划 ${ROUNDS} 轮 × 65 秒"
+
+          ok=0; fail=0
+          for i in $(seq 1 "$ROUNDS"); do
+            for q in "stops=${TRAIN_STOPS}" "mode=metro&stops=${METRO_STOPS}"; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "${WORKER}/realtime?${q}" || echo 000)
+              if [ "$code" = "200" ]; then ok=$((ok+1)); else fail=$((fail+1)); echo "  第 ${i} 轮 ${q} -> HTTP ${code}"; fi
+            done
+            [ "$i" -lt "$ROUNDS" ] && sleep 65
+          done
+
+          {
+            echo "## 早高峰采样完成"
+            echo ""
+            echo "- 悉尼时间：$(TZ=Australia/Sydney date '+%F %H:%M %Z')"
+            echo "- 轮数：${ROUNDS}（每轮 65 秒，火车 + Metro 各一次）"
+            echo "- 请求：成功 ${ok} / 失败 ${fail}"
+            echo ""
+            echo "**数据不在这里** —— Cloudflare 已自动记录。事后跑："
+            echo '```'
+            echo "bash worker/scripts/cpu-limit-report.sh 24 hour"
+            echo '```'
+            echo "看这个小时的 cpuTimeP50/P90/P99 与 status=exceededResources。"
+            echo "账① 的验收口径：刷新 p50 ≤ 8 ms、max ≤ 10 ms（已于 2026-09-07 按实测"
+            echo "改写为「热路径 ≤ 5 ms、刷新 ≤ 35 ms」，见 contracts/worker-api.md §2.4）。"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # 少量失败不算这次采样失败（上游偶发抖动不该把仓库标红）；
+          # 全军覆没才是真问题 —— 那说明 Worker 挂了，值得告警。
+          if [ "$ok" -eq 0 ]; then
+            echo "::error::所有请求都失败，Worker 可能不可用"
+            exit 1
+          fi
