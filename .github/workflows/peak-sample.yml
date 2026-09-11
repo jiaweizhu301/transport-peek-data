@@ -16,13 +16,17 @@ name: peak-sample
 
 on:
   schedule:
-    # 悉尼早高峰 07:00–09:00。cron 是 UTC，且 GitHub 不认时区，所以两条都挂上：
-    #   AEDT（10 月–4 月，UTC+11）：20:00 UTC = 悉尼 07:00
-    #   AEST（4 月–10 月，UTC+10）：21:00 UTC = 悉尼 07:00
-    # 另一条那天会落在悉尼 08:00，仍在高峰区间内，等于白拿第二个样本。
+    # 悉尼早高峰 07:00–09:00。cron 是 UTC、GitHub 不认时区，而悉尼有夏令时，
+    # 所以三条都挂上，再由下面的 guard 步骤按悉尼当地小时决定跑不跑：
+    #   AEDT（10 月–4 月，UTC+11）：20/21/22 UTC = 悉尼 07/08/09
+    #   AEST（4 月–10 月，UTC+10）：20/21/22 UTC = 悉尼 06/07/08
+    # 【2026-09-12 修正】原来只挂 20 与 21：AEST 下那是悉尼 06:00 与 07:00，
+    # 前者在高峰窗口之外 —— 半年里两个样本有一个是峰前样本，账① 会被稀释。
+    # 现在多挂一条 22，并且**用 guard 而不是靠注释**保证只在 07–09 之间真的采样。
     # 星期：悉尼的周一–周五 = UTC 的周日–周四（高峰是工作日现象，周末不采）。
     - cron: "0 20 * * 0-4"
     - cron: "0 21 * * 0-4"
+    - cron: "0 22 * * 0-4"
   workflow_dispatch:
     inputs:
       minutes:
@@ -40,7 +44,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
+      # 三条 cron 里每天总有一条落在高峰窗口外（夏令时使然）。与其在注释里算时差，
+      # 不如让工作流自己看悉尼当地时间：不在 07:00–09:00 就直接跳过，不浪费请求、
+      # 也不往账① 里掺平峰样本。手动 dispatch 不受此限（调试时随时可跑）。
+      - name: 只在悉尼早高峰继续
+        id: guard
+        run: |
+          H=$(TZ=Australia/Sydney date +%-H)
+          D=$(TZ=Australia/Sydney date +%u)   # 1=周一 … 7=周日
+          echo "悉尼 $(TZ=Australia/Sydney date '+%F %H:%M %Z')（周 $D）"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "手动触发，跳过时间窗检查"; echo "go=1" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ "$H" -ge 7 ] && [ "$H" -lt 9 ] && [ "$D" -le 5 ]; then
+            echo "go=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "不在悉尼工作日 07:00–09:00，本次不采样（账① 只认早高峰样本）"
+            echo "go=0" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: 制造早高峰流量
+        if: steps.guard.outputs.go == '1'
         env:
           WORKER: https://transportpeek-rt.vaporrainbow.workers.dev
           # Central(200060) 与 Town Hall(200070)：全网最忙的两个火车父站，

@@ -83,7 +83,7 @@ def feed_entry(build_dir, mode, base_url):
 
 
 def build_config():
-    """契约 4b。首版广告全关；realtime 按 M0-0.7(b) 触发的 DP3（TTL 60 s / 轮询 30–60 s）取 45 s。"""
+    """契约 4b。首版广告全关；realtime 按 M0-0.14 的定稿取 60 s（不是区间取中的 45）。"""
     return {
         'schema_version': CONFIG_SCHEMA_VERSION,
         'ads': {
@@ -94,7 +94,12 @@ def build_config():
             'grace': {'min_uses': 20, 'min_days': 7},
         },
         'realtime': {
-            'poll_seconds': 45,                 # DP3 = A「先放宽」：30–60 秒区间取中
+            # M0-0.14 定稿：前台轮询 60 秒（设置里可切 30），**不是** 30–60 区间取中的 45。
+            # 60 是按账④ 选的，不是随手取的中位数：Worker 请求数实测 ≈10.2 万/天已经贴死
+            # 10 万上限，且请求数只受前台轮询间隔支配。发 45 会把它再抬 60/45 ≈ 1.33 倍
+            # （≈13.6 万/天），把一本已经超了的账又放大三分之一。
+            # 客户端 Manifest.kt 的默认值也是 60，发 45 等于用远端配置把对的默认值改错。
+            'poll_seconds': 60,
             'widget_min_refresh_minutes': 30,
             'stale_after_seconds': 120,
             'widget_stale_after_minutes': 45,
