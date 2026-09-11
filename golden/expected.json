@@ -1,0 +1,262 @@
+{
+ "metro": {
+  "build_stats": {
+   "calendar": 5,
+   "calendar_dates": 0,
+   "calendar_days": 116,
+   "calendar_end": 20261231,
+   "calendar_start": 20260907,
+   "direction_groups": 3,
+   "dropped_nonrevenue_headsign_trips": 0,
+   "dropped_nonrevenue_trips": 0,
+   "dropped_passthrough_rows": 0,
+   "mode": "metro",
+   "orphan_stop_time_rows": 0,
+   "platform_code_rows": 42,
+   "routes": 1,
+   "static_version": "20260907-0000",
+   "stop_patterns": 6,
+   "stop_times": 4251,
+   "stops": 63,
+   "transfers": 0,
+   "trips": 203
+  },
+  "platform_code_rows": 42,
+  "sample_departures": [
+   [
+    "0251-002-101-002:1000",
+    "2000460",
+    17681,
+    "Sydenham",
+    "sydenham"
+   ],
+   [
+    "0252-001-101-002:1000",
+    "2000460",
+    17681,
+    "Sydenham",
+    "sydenham"
+   ],
+   [
+    "0252-001-102-002:1000",
+    "2000460",
+    18281,
+    "Sydenham",
+    "sydenham"
+   ],
+   [
+    "0252-001-103-002:1000",
+    "2000460",
+    18881,
+    "Sydenham",
+    "sydenham"
+   ],
+   [
+    "0253-002-103-002:1000",
+    "2000460",
+    18881,
+    "Sydenham",
+    "sydenham"
+   ]
+  ],
+  "sample_platform": [
+   [
+    "2000460",
+    "Barangaroo Station, Platform 1",
+    "1"
+   ],
+   [
+    "2000461",
+    "Barangaroo Station, Platform 2",
+    "2"
+   ],
+   [
+    "2000462",
+    "Martin Place Station, Platform 4",
+    "4"
+   ],
+   [
+    "2000463",
+    "Martin Place Station, Platform 3",
+    "3"
+   ],
+   [
+    "2000464",
+    "Gadigal Station, Platform 1",
+    "1"
+   ]
+  ],
+  "tables": {
+   "calendar": {
+    "rows": 5,
+    "sha256": "8046a5a9dc909c7e3a0060a2d8ca672276246eb5ef791b25491b00e8b4b83df5"
+   },
+   "calendar_dates": {
+    "rows": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+   },
+   "direction_groups": {
+    "rows": 3,
+    "sha256": "c6dc271caa3a9d97ce06d9b699ee703b578fab2cb0d2717e851abe6a4d053110"
+   },
+   "meta": {
+    "rows": 1,
+    "sha256": "2c5fd7c7d4097e5b1959ea3702c9b4a2f03eb4484165f685c809b11808f9044d"
+   },
+   "routes": {
+    "rows": 1,
+    "sha256": "d64cf55bb91481495b9e6d040eb5c2ca986570403048764b0e90a7b720e9994c"
+   },
+   "stop_patterns": {
+    "rows": 6,
+    "sha256": "ae4b16fe2bcaa61a32631e12df452a705d34185dd4c4b5e9f937de1f08dc6f91"
+   },
+   "stop_times": {
+    "rows": 4251,
+    "sha256": "65dc3c783000e4fe858e0663af3657bf8ef48e0c6e8e0e3863de8b2f110d7fd5"
+   },
+   "stops": {
+    "rows": 63,
+    "sha256": "823971d59b5e75bea4572ba5ee502d1cc3a700e45dcc3f04a6317336ec2d887b"
+   },
+   "transfers": {
+    "rows": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+   },
+   "trips": {
+    "rows": 203,
+    "sha256": "a152b183a306388f101db4539518afc12b61181480161466351f7e6fd16f3d7e"
+   }
+  }
+ },
+ "sydneytrains": {
+  "build_stats": {
+   "calendar": 32,
+   "calendar_dates": 0,
+   "calendar_days": 16,
+   "calendar_end": 20260922,
+   "calendar_start": 20260907,
+   "direction_groups": 49,
+   "dropped_nonrevenue_headsign_trips": 30,
+   "dropped_nonrevenue_trips": 1,
+   "dropped_passthrough_rows": 698,
+   "mode": "sydneytrains",
+   "orphan_stop_time_rows": 0,
+   "platform_code_rows": 469,
+   "routes": 28,
+   "static_version": "20260907-0000",
+   "stop_patterns": 101,
+   "stop_times": 3115,
+   "stops": 625,
+   "transfers": 0,
+   "trips": 179
+  },
+  "platform_code_rows": 469,
+  "sample_departures": [
+   [
+    "809C.1406.151.2.T.8.91168766",
+    "2000325",
+    36660,
+    "Central",
+    "central"
+   ],
+   [
+    "804P.1406.151.128.T.8.91167626",
+    "2000325",
+    83520,
+    "Central",
+    "central"
+   ],
+   [
+    "815L.1406.151.2.B.8.91169726",
+    "2000328",
+    59664,
+    "Central",
+    "central"
+   ],
+   [
+    "819J.1406.151.128.A.8.91169828",
+    "2000328",
+    66780,
+    "Central",
+    "central"
+   ],
+   [
+    "811K.1406.151.128.T.8.91551077",
+    "2000330",
+    60175,
+    "Emu Plains",
+    "emu plains"
+   ]
+  ],
+  "sample_platform": [
+   [
+    "2000321",
+    "Central Station Platform 1",
+    "1"
+   ],
+   [
+    "2000322",
+    "Central Station Platform 2",
+    "2"
+   ],
+   [
+    "2000323",
+    "Central Station Platform 3",
+    "3"
+   ],
+   [
+    "2000324",
+    "Central Station Platform 4",
+    "4"
+   ],
+   [
+    "2000325",
+    "Central Station Platform 5",
+    "5"
+   ]
+  ],
+  "tables": {
+   "calendar": {
+    "rows": 32,
+    "sha256": "57df639f736db4bcd797d5c93048d2b70367974b0b524d30e03418e909e52653"
+   },
+   "calendar_dates": {
+    "rows": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+   },
+   "direction_groups": {
+    "rows": 49,
+    "sha256": "3c4a20160b43a6c3766ba2fbe99d20c0fb7e701d9d19bf56dbd170b8de046fd8"
+   },
+   "meta": {
+    "rows": 1,
+    "sha256": "21490dd70cfa228108c193dea3104a763230c79619563965833ab59a509a2b5c"
+   },
+   "routes": {
+    "rows": 28,
+    "sha256": "d0bff78b08d8b15b5ed286479f1ddca4b200a5484c48deef136e599375330500"
+   },
+   "stop_patterns": {
+    "rows": 101,
+    "sha256": "a57f870954edaae646b74b9c6bb8246f0fc2f9f13fa66b18688386c27aad38f3"
+   },
+   "stop_times": {
+    "rows": 3115,
+    "sha256": "14c4e6020636b3e5af1131e448c7ace9d116516640841cc965e427f5d478d9a9"
+   },
+   "stops": {
+    "rows": 625,
+    "sha256": "50588469baf3f8caa196a8bf8d8201457d90419af176f71e07ffb5072d8086ea"
+   },
+   "transfers": {
+    "rows": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+   },
+   "trips": {
+    "rows": 179,
+    "sha256": "5f2cece8332b91c42c961ddfb769629070b0327472b12ad93a79b080659a62c3"
+   }
+  }
+ }
+}

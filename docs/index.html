@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TransportPeek Data</title>
+<style>
+  :root { color-scheme: light dark; --fg:#1a1a1a; --bg:#fbfbf9; --mut:#666; --line:#e2e0da; --acc:#0b5c4b; }
+  @media (prefers-color-scheme: dark) { :root { --fg:#e8e6e1; --bg:#16181a; --mut:#9a9a94; --line:#2e3236; --acc:#6fd3b8; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans SC",sans-serif; }
+  main { max-width: 40rem; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .3rem; letter-spacing:-.01em; }
+  p.sub { color: var(--mut); margin: 0 0 2.2rem; }
+  ul { list-style: none; padding: 0; }
+  li { padding: .8rem 0; border-bottom: 1px solid var(--line); }
+  a { color: var(--acc); text-decoration: none; font-weight: 600; }
+  a:hover { text-decoration: underline; }
+  .d { display:block; color: var(--mut); font-weight: 400; font-size: .9rem; }
+  code { background: rgba(128,128,128,.14); padding: .1em .35em; border-radius: 3px; font-size: .88em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>TransportPeek Data</h1>
+  <p class="sub">Sydney public transport departures · data repository / 数据仓库</p>
+  <ul>
+    <li><a href="privacy.html">Privacy Policy · 隐私政策</a>
+        <span class="d">No accounts, no tracking, no location permission.</span></li>
+    <li><a href="attribution.html">Data Attribution · 数据归属</a>
+        <span class="d">Data © Transport for NSW, CC BY 4.0 — and what we changed.</span></li>
+    <li><a href="https://github.com/jiaweizhu301/transport-peek-data/releases/latest/download/manifest.json">manifest.json</a>
+        <span class="d">Current release manifest the app reads · <code>releases/latest/download/manifest.json</code></span></li>
+    <li><a href="https://github.com/jiaweizhu301/transport-peek-data">GitHub repository</a>
+        <span class="d">Daily pipeline, invariant checks, published timetable databases.</span></li>
+  </ul>
+</main>
+</body>
+</html>

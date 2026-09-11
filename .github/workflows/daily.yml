@@ -1,0 +1,117 @@
+# 拷贝到 data 仓的 .github/workflows/daily.yml（M1-D1）
+name: daily
+
+# 30 16 * * * UTC = 悉尼 02:30（AEST）/ 03:30（AEDT）——单条 cron，M1-D1 口径。
+# 公开仓 60 天无提交会被禁用 schedule，所以每次运行都提交一行心跳文件。
+on:
+  schedule:
+    - cron: '30 16 * * *'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'stable = 更新 latest；prerelease = 不动 latest（schema_version 变更时用）'
+        type: choice
+        options: [stable, prerelease]
+        default: stable
+      days:
+        description: '日历窗口覆盖，逐模式写，如 sydneytrains=16,metro=120；留空 = 用每模式缺省（不变量下限 14）'
+        default: ''
+
+permissions:
+  contents: write        # 建 Release、提交心跳、删旧 tag
+
+concurrency:
+  group: daily
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CHANNEL: ${{ inputs.channel || 'stable' }}
+      # 留空 = 走 scripts/gtfs_modes.py 里每模式的缺省窗口（sydneytrains=16 / metro=120）。
+      # 火车 16 天是被 10 MB 阈值逼的；metro 砍窗口零收益，所以不砍。
+      DAYS: ${{ inputs.days || '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 装依赖（只有 jsonschema，其余全是标准库）
+        run: pip install --quiet jsonschema
+
+      # D4：黄金样本先跑。冻结输入 -> 期望输出，与上游无关，挂了说明是代码回归。
+      - name: D4 黄金样本
+        run: python scripts/golden_check.py
+
+      - name: 定 tag
+        id: meta
+        run: echo "tag=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: D2 拉上游 GTFS
+        env:
+          TFNSW_API_KEY: ${{ secrets.TFNSW_API_KEY }}
+        run: python scripts/fetch_gtfs.py build/gtfs
+
+      - name: D2 裁剪建库
+        run: python scripts/build_db.py build/gtfs build --days "$DAYS"
+
+      # D4：不变量。任一失败 -> 后续步骤全跳过 -> 不发 Release（下面的 notify 会告警）
+      - name: D4 不变量
+        run: python scripts/invariants.py build
+
+      - name: D3 生成 manifest / config / stop_parents
+        run: |
+          python scripts/gen_manifest.py build \
+            --tag "${{ steps.meta.outputs.tag }}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --channel "$CHANNEL"
+
+      - name: D3/D4 资产对账 + schema 校验
+        run: python scripts/validate_assets.py build
+
+      - name: D3 发 Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/publish_release.sh build "${{ steps.meta.outputs.tag }}" "$CHANNEL"
+
+      - name: D5 清理 14 天前的 Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/cleanup_releases.sh 14
+
+      # D1 心跳：公开仓 60 天无提交会被 GitHub 禁用 schedule
+      - name: D1 心跳提交
+        if: always()
+        run: |
+          mkdir -p heartbeat
+          {
+            echo "run=${GITHUB_RUN_ID} at=$(date -u +%FT%TZ) status=${{ job.status }}"
+            echo "tag=${{ steps.meta.outputs.tag }} channel=${CHANNEL} days=${DAYS}"
+          } > heartbeat/last-run.txt
+          git config user.name  'transport-peek-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add heartbeat/last-run.txt
+          git commit -m "heartbeat $(date -u +%FT%TZ) (${{ job.status }})" || exit 0
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      # D5 失败告警：Actions 默认给仓库 owner 发「workflow run failed」邮件，
+      # 这一步把失败原因写进 Job Summary，邮件点进来一眼能看到。
+      - name: D5 失败告警
+        if: failure()
+        run: |
+          {
+            echo "## 每日管线失败"
+            echo ""
+            echo "- run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "- tag: ${{ steps.meta.outputs.tag }} / channel: ${CHANNEL}"
+            echo "- **本次没有发布 Release**，客户端继续用上一版 latest。"
+            echo ""
+            echo "排查顺序：黄金样本挂 = 代码回归；不变量挂 = 上游数据异常；"
+            echo "资产对账挂 = manifest 与产物对不上；Release 步骤挂 = token/网络。"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1

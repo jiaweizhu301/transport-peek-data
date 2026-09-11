@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TransportPeek · Privacy Policy</title>
+<style>
+  :root { color-scheme: light dark; --fg:#1a1a1a; --bg:#fbfbf9; --mut:#666; --line:#e2e0da; --acc:#0b5c4b; }
+  @media (prefers-color-scheme: dark) { :root { --fg:#e8e6e1; --bg:#16181a; --mut:#9a9a94; --line:#2e3236; --acc:#6fd3b8; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans SC",sans-serif; }
+  main { max-width: 44rem; margin: 0 auto; padding: 2.5rem 1.25rem 5rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; letter-spacing:-.01em; }
+  h2 { font-size: 1.1rem; margin: 2.2rem 0 .6rem; padding-bottom:.3rem; border-bottom:1px solid var(--line); }
+  .sub { color: var(--mut); font-size: .9rem; margin: 0 0 2rem; }
+  ul { padding-left: 1.2rem; } li { margin: .35rem 0; }
+  a { color: var(--acc); }
+  .zh { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 2px solid var(--line); }
+  code { background: rgba(128,128,128,.14); padding: .1em .35em; border-radius: 3px; font-size: .9em; }
+  footer { margin-top: 3rem; color: var(--mut); font-size: .85rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>TransportPeek — Privacy Policy</h1>
+  <p class="sub">Last updated: 2026-09-07</p>
+
+  <h2>Summary</h2>
+  <p>TransportPeek shows public transport departure times for Sydney. It has no accounts,
+     no sign-in, and no user profiles. We do not collect, store, or sell personal information.</p>
+
+  <h2>What stays on your device</h2>
+  <ul>
+    <li>Your saved favourites (a stop plus a direction, or a stop-to-stop trip).</li>
+    <li>App settings: language, theme, Wi-Fi-only downloads, refresh interval.</li>
+    <li>The downloaded offline timetable database.</li>
+  </ul>
+  <p>All of the above is stored locally. Favourites and settings may be included in your
+     device's own Android backup if you have that enabled; the timetable database is excluded
+     from backup because it can be re-downloaded.</p>
+
+  <h2>What leaves your device</h2>
+  <ul>
+    <li><strong>Real-time requests.</strong> When you view a stop, the app asks our service for
+        live departures for that stop. The request contains the stop identifier and the transport
+        mode. It does not contain your name, account, contacts, or precise location.</li>
+    <li><strong>Timetable and configuration downloads.</strong> The app downloads timetable files
+        and a configuration file from GitHub Releases. GitHub acts as the file host.</li>
+  </ul>
+  <p>Our service keeps short-lived operational data (which stops were recently requested, and a
+     cache of live departures) so it can refresh upstream data efficiently. This data is not linked
+     to a person and is overwritten continuously.</p>
+
+  <h2>Location</h2>
+  <p>The app does not request GPS or background location permission.</p>
+
+  <h2>Advertising</h2>
+  <p>Advertising is disabled in the current release (<code>ads.enabled = false</code>). If it is
+     ever enabled, this page will be updated first, and users in the EEA, the UK and Switzerland
+     will be shown a consent prompt before any personalised advertising.</p>
+
+  <h2>Children</h2>
+  <p>The app is not directed at children and does not knowingly collect data from them.</p>
+
+  <h2>Data sources</h2>
+  <p>Timetable and real-time data come from Transport for NSW under CC BY 4.0.
+     See the <a href="attribution.html">attribution page</a>.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this policy: open an issue at
+     <a href="https://github.com/jiaweizhu301/transport-peek-data/issues">the data repository</a>.</p>
+
+  <section class="zh">
+    <h1>TransportPeek — 隐私政策</h1>
+    <p class="sub">最后更新：2026-09-07</p>
+
+    <h2>一句话</h2>
+    <p>TransportPeek 显示悉尼公共交通的发车时间。没有账号、不需要登录、不建用户画像，
+       不收集、不保存、不出售个人信息。</p>
+
+    <h2>只留在你手机上的</h2>
+    <ul>
+      <li>你的收藏（站 + 方向，或者站 A → 站 B）。</li>
+      <li>应用设置：语言、主题、仅 Wi-Fi 下载、刷新间隔。</li>
+      <li>下载下来的离线时刻表数据库。</li>
+    </ul>
+    <p>以上全部存在本机。收藏与设置可能会进入安卓自带的备份（如果你开了备份）；
+       时刻表数据库不进备份，因为它随时可以重新下载。</p>
+
+    <h2>会离开你手机的</h2>
+    <ul>
+      <li><strong>实时查询。</strong>你打开某个站时，应用会向我们的服务请求该站的实时发车。
+          请求里只有站点标识和交通模式，不含姓名、账号、通讯录或精确定位。</li>
+      <li><strong>时刻表与配置下载。</strong>应用从 GitHub Releases 下载时刻表文件与配置文件，
+          GitHub 只作为文件托管方。</li>
+    </ul>
+    <p>我们的服务会保留很短期的运行数据（最近被请求过哪些站、实时发车的缓存），
+       用于高效刷新上游数据。这些数据不与任何个人关联，并会被持续覆盖。</p>
+
+    <h2>定位</h2>
+    <p>应用不申请 GPS 或后台定位权限。</p>
+
+    <h2>广告</h2>
+    <p>当前版本广告全部关闭（<code>ads.enabled = false</code>）。若将来开启，会先更新本页；
+       欧洲经济区、英国、瑞士的用户在出现个性化广告前会先看到同意弹窗。</p>
+
+    <h2>儿童</h2>
+    <p>本应用不面向儿童，也不会有意收集儿童数据。</p>
+
+    <h2>数据来源</h2>
+    <p>时刻表与实时数据来自 Transport for NSW，按 CC BY 4.0 授权使用，
+       见<a href="attribution.html">归属页</a>。</p>
+
+    <h2>联系</h2>
+    <p>对本政策有疑问，请到
+       <a href="https://github.com/jiaweizhu301/transport-peek-data/issues">数据仓库 issues</a> 提出。</p>
+  </section>
+
+  <footer>TransportPeek · <a href="index.html">index</a> · <a href="attribution.html">attribution</a></footer>
+</main>
+</body>
+</html>

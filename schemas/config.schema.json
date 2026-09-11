@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TransportPeek config.json",
+  "description": "契约 4b · 与 manifest 同源的运行配置（GitHub Release 资产，不经 Worker，不用 Remote Config）。拉不到或校验失败 → 客户端用内置 fail-closed 默认（广告全关）。依据 PROJECT_REQUIREMENTS v1.1 §4 §6 §8。冻结日期 2026-09-06，改动需主 agent 批准。",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "ads", "realtime", "force_update"],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "ads": {"type": "object", "additionalProperties": false, "required": ["enabled", "app_open", "banners", "grace"], "properties": {
+      "enabled": {"type": "boolean", "default": false, "description": "顶层总开关，仅 owner 手动拨；首版 false"},
+      "app_open": {"type": "object", "additionalProperties": false, "required": ["probability", "min_interval_minutes", "exclude_deeplink_launch"], "properties": {
+        "probability": {"type": "number", "minimum": 0, "maximum": 1, "default": 0, "description": "冷启动展示概率，首版 0.0"},
+        "min_interval_minutes": {"type": "integer", "minimum": 0, "default": 240, "description": "两次 App Open 硬最小间隔"},
+        "exclude_deeplink_launch": {"type": "boolean", "const": true, "description": "deep link / Widget / 通知进入的会话永不展示；契约固定 true"}}},
+      "banners": {"type": "object", "additionalProperties": false, "required": ["pages"], "properties": {
+        "pages": {"type": "array", "default": [], "uniqueItems": true, "items": {"type": "string", "enum": ["settings", "alert_detail", "search", "stop_detail"]},
+                  "description": "启用横幅的页面；首页与「打开→看车」路径永不出现在此"}}},
+      "grace": {"type": "object", "additionalProperties": false, "required": ["min_uses", "min_days"], "properties": {
+        "min_uses": {"type": "integer", "minimum": 0, "default": 20, "description": "每用户豁免：满此使用次数"},
+        "min_days": {"type": "integer", "minimum": 0, "default": 7, "description": "且安装满此天数后才可能出广告"}}}}},
+    "realtime": {"type": "object", "additionalProperties": false, "required": ["poll_seconds", "widget_min_refresh_minutes", "stale_after_seconds", "widget_stale_after_minutes"], "properties": {
+      "poll_seconds": {"type": "integer", "minimum": 10, "maximum": 120, "default": 15, "description": "前台且亮屏轮询间隔（M0 DP3 触发则发 30–60）"},
+      "widget_min_refresh_minutes": {"type": "integer", "minimum": 15, "default": 30, "description": "Widget 后台刷新最小间隔"},
+      "stale_after_seconds": {"type": "integer", "minimum": 30, "default": 120, "description": "app 内：距 fetched_at 超过此秒数退回「时刻表」态"},
+      "widget_stale_after_minutes": {"type": "integer", "minimum": 15, "default": 45, "description": "Widget：距 fetched_at 超过此分钟整块灰显（须 > widget_min_refresh_minutes）"}}},
+    "force_update": {"type": "object", "additionalProperties": false, "required": ["min_supported_app_version", "message_key"], "properties": {
+      "min_supported_app_version": {"type": "integer", "minimum": 1, "description": "与 manifest 同名字段取较大者生效；只用于破坏性变更"},
+      "message_key": {"type": "string", "pattern": "^[a-z0-9_]+$", "description": "strings-master.csv 中的文案 key，如 force_update_generic"}}}
+  }
+}

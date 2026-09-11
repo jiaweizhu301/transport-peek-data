@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://transportpeek.example/contracts/manifest.schema.json",
+  "title": "TransportPeek data-repo Release manifest.json",
+  "description": "契约 4a · GitHub Release 资产 manifest.json。客户端只认 releases/latest/download/manifest.json。依据 PROJECT_REQUIREMENTS v1.1 §3.1（需求原文字段名 minSupportedVersion 在此统一为 snake_case min_supported_app_version）。冻结日期 2026-09-06，改动需主 agent 批准。config.json 的 schema 见同目录 config.schema.json。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "min_supported_app_version", "feeds", "config_url", "privacy_policy_url", "attribution_url", "stop_parents_url_template"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1, "description": "manifest 结构版本；破坏性变更递增" },
+    "generated_at": { "type": "string", "format": "date-time", "description": "管线生成时间，ISO-8601 UTC" },
+    "min_supported_app_version": { "type": "integer", "minimum": 1, "description": "允许使用本清单的最低 app versionCode；低于此值客户端拒绝下载并提示强更（仅破坏性变更时抬高）" },
+    "feeds": {
+      "type": "object",
+      "description": "每模式一项；key 即 mode，与 SQLite 文件名、Worker mode 参数一致。M1 只发 sydneytrains 与 metro",
+      "minProperties": 1,
+      "propertyNames": { "enum": ["sydneytrains", "metro", "buses", "lightrail", "ferries", "nswtrains"] },
+      "additionalProperties": { "$ref": "#/definitions/feed" }
+    },
+    "config_url": { "type": "string", "format": "uri", "description": "config.json 的绝对 URL（同一 Release 资产，与清单同源，不经 Worker）" },
+    "privacy_policy_url": { "type": "string", "format": "uri", "description": "GitHub Pages 隐私政策页" },
+    "attribution_url": { "type": "string", "format": "uri", "description": "GitHub Pages TfNSW CC-BY 4.0 归属页" },
+    "stop_parents_url_template": { "type": "string", "description": "必填。Worker 用的子站→父站映射资产 URL 模板，含 {mode} 占位，如 …/download/stop_parents.{mode}.json" },
+    "channel": { "type": "string", "enum": ["stable", "prerelease"], "default": "stable", "description": "发布通道。schema_version 变更先以 GitHub prerelease 发布（channel=prerelease，不更新 latest）；客户端「检查更新」只跟 stable；M4 转正后再发 stable" }
+  },
+  "definitions": {
+    "feed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "sha256", "size_bytes", "static_version", "schema_version", "calendar_start", "calendar_end", "compression"],
+      "properties": {
+        "url": { "type": "string", "format": "uri", "description": "压缩后 SQLite 的下载 URL（releases/download/<tag>/<mode>.sqlite.gz）" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$", "description": "压缩文件的 SHA-256，客户端下载后校验" },
+        "size_bytes": { "type": "integer", "minimum": 1, "description": "压缩文件字节数，供仅 Wi-Fi 提示与进度条" },
+        "static_version": { "type": "string", "pattern": "^[0-9]{8}(-[0-9]{4})?$", "description": "与 SQLite meta.static_version、Worker 响应 static_version 同值" },
+        "schema_version": { "type": "integer", "minimum": 1, "description": "该 SQLite 的 DDL 版本（meta.schema_version）；客户端不识别则拒装" },
+        "calendar_start": { "type": "integer", "minimum": 20200101, "description": "YYYYMMDD" },
+        "calendar_end": { "type": "integer", "minimum": 20200101, "description": "YYYYMMDD；客户端超过此日显示「时刻表待更新」" },
+        "compression": { "type": "string", "enum": ["gzip"], "description": "冻结为 gzip（Android 原生 GZIPInputStream，零依赖；需求 v1.2 §3.1 已对齐）。改 zstd 需扩 enum 并递增 schema_version" }
+      }
+    }
+  }
+}

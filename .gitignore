@@ -1,0 +1,16 @@
+# 管线中间产物一律不进仓库（GTFS 原始 zip 198 MB，SQLite 55 MB）
+build/
+*.zip
+*.sqlite
+*.sqlite.gz
+*.sqlite.tmp
+*.version
+build_stats.json
+manifest.json
+config.json
+stop_parents.*.json
+__pycache__/
+*.pyc
+
+# 例外：黄金样本的冻结输入必须入库
+!golden/golden.*.gtfs.zip

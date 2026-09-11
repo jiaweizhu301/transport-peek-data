@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TransportPeek · Data Attribution</title>
+<style>
+  :root { color-scheme: light dark; --fg:#1a1a1a; --bg:#fbfbf9; --mut:#666; --line:#e2e0da; --acc:#0b5c4b; }
+  @media (prefers-color-scheme: dark) { :root { --fg:#e8e6e1; --bg:#16181a; --mut:#9a9a94; --line:#2e3236; --acc:#6fd3b8; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans SC",sans-serif; }
+  main { max-width: 44rem; margin: 0 auto; padding: 2.5rem 1.25rem 5rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; letter-spacing:-.01em; }
+  h2 { font-size: 1.1rem; margin: 2.2rem 0 .6rem; padding-bottom:.3rem; border-bottom:1px solid var(--line); }
+  .sub { color: var(--mut); font-size: .9rem; margin: 0 0 2rem; }
+  a { color: var(--acc); }
+  blockquote { margin: 1rem 0; padding: .9rem 1.1rem; border-left: 3px solid var(--acc);
+               background: rgba(128,128,128,.09); border-radius: 0 6px 6px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; margin: .8rem 0; }
+  th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--line); }
+  th { color: var(--mut); font-weight: 600; }
+  code { background: rgba(128,128,128,.14); padding: .1em .35em; border-radius: 3px; font-size: .9em; }
+  .zh { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 2px solid var(--line); }
+  footer { margin-top: 3rem; color: var(--mut); font-size: .85rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Data Attribution</h1>
+  <p class="sub">TransportPeek · last updated 2026-09-07</p>
+
+  <blockquote>
+    <strong>Data © Transport for NSW.</strong> Timetable and real-time data used by TransportPeek
+    is sourced from the Transport for NSW Open Data Hub and is licensed under
+    <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 (CC BY 4.0)</a>.
+  </blockquote>
+
+  <p>TransportPeek is an independent application. It is not produced, endorsed, or supported by
+     Transport for NSW. Departure information is provided on a best-effort basis and should not be
+     relied upon as the sole source for time-critical travel.</p>
+
+  <h2>Feeds used</h2>
+  <table>
+    <tr><th>Purpose</th><th>Feed</th></tr>
+    <tr><td>Sydney Trains timetable</td><td><code>v1/gtfs/schedule/sydneytrains</code></td></tr>
+    <tr><td>Sydney Metro timetable</td><td><code>v2/gtfs/schedule/metro</code></td></tr>
+    <tr><td>Sydney Trains live departures</td><td><code>v2/gtfs/realtime/sydneytrains</code></td></tr>
+    <tr><td>Sydney Metro live departures</td><td><code>v2/gtfs/realtime/metro</code></td></tr>
+    <tr><td>Service alerts</td><td><code>v2/gtfs/alerts/&lt;mode&gt;</code></td></tr>
+  </table>
+  <p>Source: <a href="https://opendata.transport.nsw.gov.au/">Transport for NSW Open Data Hub</a>.</p>
+
+  <h2>Modifications</h2>
+  <p>CC BY 4.0 requires that changes be indicated. The published timetable databases are a
+     transformation of the upstream GTFS feeds, not a verbatim copy:</p>
+  <ul>
+    <li>Converted from GTFS text files to SQLite, and gzip-compressed.</li>
+    <li>Shapes, occupancy and vehicle files dropped.</li>
+    <li>Sydney Trains: trips belonging to the <code>NSWTrains</code> agency removed (they duplicate
+        a separate feed).</li>
+    <li>Trips that serve no boarding stop (empty running) removed; stop times where the vehicle
+        neither picks up nor sets down removed.</li>
+    <li>Platform numbers parsed out of platform stop names into a <code>platform_code</code> column.</li>
+    <li>Repeated stop sequences de-duplicated into a <code>stop_patterns</code> table.</li>
+    <li>The service calendar is trimmed to a rolling window starting at the build date.</li>
+  </ul>
+  <p>Times, stop identifiers, route identifiers and trip identifiers are preserved unchanged, so the
+     data remains cross-referenceable with the upstream feeds.</p>
+
+  <h2>Third-party licences</h2>
+  <p>Open-source components used by the app are listed in the app under Settings → About →
+     Open-source licences.</p>
+
+  <section class="zh">
+    <h1>数据归属</h1>
+    <p class="sub">TransportPeek · 最后更新 2026-09-07</p>
+
+    <blockquote>
+      <strong>数据版权归 Transport for NSW 所有。</strong>TransportPeek 使用的时刻表与实时数据
+      来自 Transport for NSW Open Data Hub，按
+      <a href="https://creativecommons.org/licenses/by/4.0/deed.zh">知识共享署名 4.0（CC BY 4.0）</a>授权。
+    </blockquote>
+
+    <p>TransportPeek 是独立应用，非 Transport for NSW 出品，也未获其背书或支持。
+       发车信息尽力而为，请勿作为赶车的唯一依据。</p>
+
+    <h2>做了哪些改动</h2>
+    <p>CC BY 4.0 要求标明改动。发布的时刻表数据库是对上游 GTFS 的加工，不是原样搬运：</p>
+    <ul>
+      <li>GTFS 文本文件转成 SQLite，再 gzip 压缩。</li>
+      <li>丢弃 shapes、occupancies、vehicle_* 等文件。</li>
+      <li>火车：裁掉 <code>NSWTrains</code> 机构的车次（与另一个独立 feed 重复）。</li>
+      <li>裁掉全程不上客的班次（空车调度），以及既不上客也不下客的停站行（飞站）。</li>
+      <li>从站台子站名里解析出站台号，写进 <code>platform_code</code> 列。</li>
+      <li>重复的停站序列归一化到 <code>stop_patterns</code> 表。</li>
+      <li>服务日历裁成从建库当天起的滚动窗口。</li>
+    </ul>
+    <p>时刻、站点 ID、线路 ID、车次 ID 全部保持原值，因此仍可与上游数据互相对照。</p>
+  </section>
+
+  <footer>TransportPeek · <a href="index.html">index</a> · <a href="privacy.html">privacy policy</a></footer>
+</main>
+</body>
+</html>
