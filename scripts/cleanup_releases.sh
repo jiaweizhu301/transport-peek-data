@@ -19,10 +19,19 @@ hdr=(-H "Authorization: Bearer ${GITHUB_TOKEN}"
 latest_tag=$(curl -sS "${hdr[@]}" "${API}/releases/latest" | python -c \
   'import json,sys;print(json.load(sys.stdin).get("tag_name",""))' || true)
 
-curl -sS "${hdr[@]}" "${API}/releases?per_page=100" | python - "$KEEP_DAYS" "$latest_tag" <<'PY' > /tmp/tp-stale.txt
+# 注意：不能写成 `curl ... | python - args <<PY`。`python -` 从 stdin 读脚本，heredoc 也占 stdin，
+# heredoc 会盖掉管道 —— Python 拿到脚本后 sys.stdin 已耗尽，json.load 必然炸。这里改为先落盘再传路径。
+curl -sS "${hdr[@]}" "${API}/releases?per_page=100" > /tmp/tp-rels.json
+python - "$KEEP_DAYS" "$latest_tag" /tmp/tp-rels.json <<'PY' > /tmp/tp-stale.txt
 import datetime, json, sys
 keep_days, latest = int(sys.argv[1]), sys.argv[2]
-rels = json.load(sys.stdin)
+with open(sys.argv[3], encoding="utf-8") as fh:
+    rels = json.load(fh)
+# API 出错时返回的是 {"message": ...} 而不是列表；直接 .sort() 会抛看不懂的 AttributeError。
+if not isinstance(rels, list):
+    msg = rels.get("message", rels) if isinstance(rels, dict) else rels
+    sys.stderr.write("FAIL 列出 Release 失败（token 或网络）：%s\n" % msg)
+    sys.exit(1)
 rels.sort(key=lambda r: r['created_at'], reverse=True)
 cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=keep_days)
 for i, r in enumerate(rels):

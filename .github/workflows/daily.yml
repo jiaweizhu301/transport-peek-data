@@ -74,6 +74,7 @@ jobs:
         run: python scripts/validate_assets.py build
 
       - name: D3 发 Release
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash scripts/publish_release.sh build "${{ steps.meta.outputs.tag }}" "$CHANNEL"
@@ -109,7 +110,12 @@ jobs:
             echo ""
             echo "- run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
             echo "- tag: ${{ steps.meta.outputs.tag }} / channel: ${CHANNEL}"
-            echo "- **本次没有发布 Release**，客户端继续用上一版 latest。"
+            if [ "${{ steps.release.outcome }}" = "success" ]; then
+              echo "- Release **已发布**（tag ${{ steps.meta.outputs.tag }}），失败发生在发布之后的步骤"
+              echo "  （例如 D5 清理）—— **客户端不受影响**，latest 已是本次的新版。"
+            else
+              echo "- **本次没有发布 Release**，客户端继续用上一版 latest。"
+            fi
             echo ""
             echo "排查顺序：黄金样本挂 = 代码回归；不变量挂 = 上游数据异常；"
             echo "资产对账挂 = manifest 与产物对不上；Release 步骤挂 = token/网络。"
