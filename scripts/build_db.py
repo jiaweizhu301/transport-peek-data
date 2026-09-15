@@ -95,6 +95,58 @@ NON_REVENUE_HEADSIGNS = frozenset([
 ])
 
 
+# ---------------------------------------------------------------------------
+# 「今天」= 悉尼当地日历日，**不是 UTC 日**。这是唯一真相，invariants.py 也从这里取。
+#
+# 为什么必须这样：GTFS 的 calendar/calendar_dates 是**悉尼当地运营日**，而 daily 的 cron
+# 是 `30 16 * * *` UTC = 悉尼 02:30。那一刻悉尼日期已经比 UTC 日期大 1 天，于是上游 feed
+# 的 calendar_start（悉尼当天）对 UTC 的「今天」永远是「未来」。
+# 2026-09-11 ~ 09-14 的四次定时运行全部因此挂在 D4 不变量：
+#   `calendar_start=20260915 晚于今天 20260914（今天没有时刻表）`
+# 而两次手动 dispatch 跑在 UTC 13:00/14:08（悉尼同日）所以躲了过去 —— 典型的
+# 「手动过 ≠ 定时过」。同一类口径 bug 本项目已经栽过一次（DST 日运营日偏一天）。
+#
+# 拿不到 tzdata 时**不许**退回 UTC（退回 UTC 就是把 bug 又装回来），改用悉尼 DST 的
+# 明文规则：AEDT(UTC+11) 从 10 月第一个周日 02:00 到 4 月第一个周日 03:00，其余 AEST(UTC+10)。
+SYDNEY_TZ_NAME = 'Australia/Sydney'
+
+
+def _first_sunday(year, month):
+    d = datetime.date(year, month, 1)
+    return d + datetime.timedelta(days=(6 - d.weekday()) % 7)
+
+
+def _sydney_offset_fallback(utc_dt):
+    """悉尼 UTC 偏移（小时），不依赖 tzdata。切换点按 UTC 比较，避免本地时间的歧义小时。"""
+    y = utc_dt.year
+    # AEDT 起点：10 月第一个周日 02:00 AEST = 前一日 16:00 UTC
+    start = datetime.datetime.combine(_first_sunday(y, 10), datetime.time(16, 0),
+                                      datetime.timezone.utc) - datetime.timedelta(days=1)
+    # AEDT 终点：4 月第一个周日 03:00 AEDT = 前一日 16:00 UTC
+    end = datetime.datetime.combine(_first_sunday(y, 4), datetime.time(16, 0),
+                                    datetime.timezone.utc) - datetime.timedelta(days=1)
+    return 11 if (utc_dt >= start or utc_dt < end) else 10
+
+
+def sydney_now(utc_dt=None):
+    """悉尼当地时间。utc_dt 仅供测试注入。"""
+    utc_dt = utc_dt or datetime.datetime.now(datetime.timezone.utc)
+    try:
+        from zoneinfo import ZoneInfo
+        return utc_dt.astimezone(ZoneInfo(SYDNEY_TZ_NAME))
+    except Exception:
+        off = _sydney_offset_fallback(utc_dt)
+        return utc_dt.astimezone(datetime.timezone(datetime.timedelta(hours=off)))
+
+
+def service_today(utc_dt=None):
+    """管线口径的「今天」。环境变量 PIPELINE_TODAY=YYYYMMDD 可钉死（黄金样本 / 自测用）。"""
+    pinned = os.environ.get('PIPELINE_TODAY')
+    if pinned:
+        return datetime.datetime.strptime(pinned.strip(), '%Y%m%d').date()
+    return sydney_now(utc_dt).date()
+
+
 # 导出给客户端的文件名。fixtures/ 与 Release 资产用同一个名字，客户端两边都能读。
 NON_REVENUE_HEADSIGNS_FILENAME = 'non_revenue_headsigns.json'
 
@@ -346,7 +398,7 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
     cal_rows = list(f.rows('calendar.txt'))
     cd_rows = list(f.rows('calendar_dates.txt'))
     if today is None:
-        today = datetime.datetime.now(datetime.timezone.utc).date()
+        today = service_today()
     starts = [ymd(c['start_date']) for c in cal_rows] + \
              [ymd(c['date']) for c in cd_rows if c['exception_type'] == '1']
     ends = [ymd(c['end_date']) for c in cal_rows] + \

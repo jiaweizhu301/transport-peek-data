@@ -24,7 +24,8 @@ import sqlite3
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_db import NON_REVENUE_HEADSIGNS, is_non_revenue_headsign  # noqa: E402  唯一真相来源
+from build_db import (NON_REVENUE_HEADSIGNS, is_non_revenue_headsign,  # noqa: E402  唯一真相来源
+                      service_today)
 
 MIN_CALENDAR_DAYS = 14
 
@@ -88,7 +89,9 @@ def check(db_path, mode):
     d = days_between(cal_lo, cal_hi)
     if d < MIN_CALENDAR_DAYS:
         fails.append('calendar 只覆盖 %d 天 < %d（%d–%d）' % (d, MIN_CALENDAR_DAYS, cal_lo, cal_hi))
-    today = int(_dt.datetime.now(_dt.timezone.utc).strftime('%Y%m%d'))
+    # 「今天」必须是**悉尼当地日**（build_db.service_today 是唯一真相）。用 UTC 会让 cron
+    # 在悉尼 02:30 跑时把上游的当日 feed 误判成「未来」—— 见 build_db 里那段注释。
+    today = int(service_today().strftime('%Y%m%d'))
     if cal_lo > today:
         fails.append('calendar_start=%d 晚于今天 %d（今天没有时刻表）' % (cal_lo, today))
     ahead = days_between(today, cal_hi)

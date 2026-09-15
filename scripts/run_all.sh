@@ -9,9 +9,10 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUT="${1:-$HERE/../build}"
 DAYS="${2:-}"
-TAG="$(date -u +%Y-%m-%d)"
+TAG="$(TZ=Australia/Sydney date +%Y-%m-%d)"   # 悉尼当地日，与 daily.yml 的 `定 tag` 一致
 
 python "$HERE/golden_check.py"
+python "$HERE/tz_check.py"
 python "$HERE/fetch_gtfs.py"   "$OUT/gtfs"
 python "$HERE/build_db.py"     "$OUT/gtfs" "$OUT" --days "$DAYS"
 python "$HERE/invariants.py"   "$OUT"

@@ -47,9 +47,15 @@ jobs:
       - name: D4 黄金样本
         run: python scripts/golden_check.py
 
+      # D4：「今天」口径回归。2026-09-11~09-14 定时运行连挂 4 天就是栽在这里。
+      - name: D4 「今天」口径（悉尼日 vs UTC 日）
+        run: python scripts/tz_check.py
+
+      # tag 用**悉尼当地日**：库里的 calendar 是悉尼运营日，cron 又在悉尼 02:30 跑，
+      # 用 UTC 会让 tag 比库的 calendar_start 早一天（见 build_db.service_today 的注释）。
       - name: 定 tag
         id: meta
-        run: echo "tag=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+        run: echo "tag=$(TZ=Australia/Sydney date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
       - name: D2 拉上游 GTFS
         env:
