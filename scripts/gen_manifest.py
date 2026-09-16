@@ -100,9 +100,16 @@ def build_config():
             # （≈13.6 万/天），把一本已经超了的账又放大三分之一。
             # 客户端 Manifest.kt 的默认值也是 60，发 45 等于用远端配置把对的默认值改错。
             'poll_seconds': 60,
-            'widget_min_refresh_minutes': 30,
+            # M2-4.3（2026-09-16 裁定）：Widget 后台周期刷新 = DP4-A 的 60 分钟。
+            # 30 分钟在 M2 的四本账里过不了：Widget 后台是账④ 模型里原本不存在的第二个
+            # 请求源，30 分钟 ≈ 每设备每天 48 次，把已经贴线的请求数直接打穿。
+            'widget_min_refresh_minutes': 60,
             'stale_after_seconds': 120,
-            'widget_stale_after_minutes': 45,
+            # 必须 > widget_min_refresh_minutes，否则每个正常刷新周期里都有一段时间
+            # 把好数据显示成「已过时」。75 = 60 + 15 余量，取最小合理值。
+            # 该约束仅在 DP4-A/B（Periodic）档成立；DP4-C'/D 下刷新本就稀疏，
+            # 灰显是预期行为而非配置错误。
+            'widget_stale_after_minutes': 75,
         },
         'force_update': {
             'min_supported_app_version': MIN_SUPPORTED_APP_VERSION,
