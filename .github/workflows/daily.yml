@@ -16,6 +16,9 @@ on:
       days:
         description: '日历窗口覆盖，逐模式写，如 sydneytrains=16,metro=120；留空 = 用每模式缺省（不变量下限 14）'
         default: ''
+      keep_days:
+        description: 'D5 保留天数。默认 14。**仅供一次性验证删除分支**：只有「不在最近 3 个 + 不是 latest + 建了 > keep_days 天」的 Release 才会被删，所以 latest 与最近 3 个任何情况下都安全。'
+        default: '14'
 
 permissions:
   contents: write        # 建 Release、提交心跳、删旧 tag
@@ -33,6 +36,9 @@ jobs:
       # 留空 = 走 scripts/gtfs_modes.py 里每模式的缺省窗口（sydneytrains=16 / metro=120）。
       # 火车 16 天是被 10 MB 阈值逼的；metro 砍窗口零收益，所以不砍。
       DAYS: ${{ inputs.days || '' }}
+      # D5 保留天数。定时运行永远是 14；只有手动 dispatch 能改，用来给「删除分支」造分母 ——
+      # 它至今零执行（仓里 Release 还不够 4 个，index >= 3 的那一档压根不存在）。
+      KEEP_DAYS: ${{ inputs.keep_days || '14' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -85,10 +91,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash scripts/publish_release.sh build "${{ steps.meta.outputs.tag }}" "$CHANNEL"
 
-      - name: D5 清理 14 天前的 Release
+      - name: D5 清理 ${{ inputs.keep_days || '14' }} 天前的 Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bash scripts/cleanup_releases.sh 14
+        run: bash scripts/cleanup_releases.sh "$KEEP_DAYS"
 
       # D1 心跳：公开仓 60 天无提交会被 GitHub 禁用 schedule
       - name: D1 心跳提交
