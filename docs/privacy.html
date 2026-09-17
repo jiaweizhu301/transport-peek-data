@@ -24,7 +24,7 @@
 <body>
 <main>
   <h1>TransportPeek — Privacy Policy</h1>
-  <p class="sub">Last updated: 2026-09-07</p>
+  <p class="sub">Last updated: 2026-09-17</p>
 
   <h2>Summary</h2>
   <p>TransportPeek shows public transport departure times for Sydney. It has no accounts,
@@ -56,9 +56,35 @@
   <p>The app does not request GPS or background location permission.</p>
 
   <h2>Advertising</h2>
-  <p>Advertising is disabled in the current release (<code>ads.enabled = false</code>). If it is
-     ever enabled, this page will be updated first, and users in the EEA, the UK and Switzerland
-     will be shown a consent prompt before any personalised advertising.</p>
+  <p>The current release shows <strong>no ads at all</strong> (<code>ads.enabled = false</code>).
+     However, the Google AdMob SDK is bundled and is started when the app launches, so it can
+     read the advertising ID even though no ad is displayed. If ads are ever switched on, this
+     page will be updated first, and users in the EEA, the UK and Switzerland will be shown a
+     consent prompt before any personalised advertising.</p>
+
+  <h2>Advertising ID</h2>
+  <p>The app's merged manifest includes <code>com.google.android.gms.permission.AD_ID</code> and
+     <code>android.permission.ACCESS_ADSERVICES_AD_ID</code>, brought in by the AdMob SDK.
+     The advertising ID is a resettable device identifier. It is not your name or an account,
+     but it is not anonymous either — so this page does not describe our data as "anonymous";
+     it says only that data is <strong>not linked to your name or to an account</strong>.</p>
+
+  <h2>Usage statistics</h2>
+  <p>The app reports five Firebase Analytics events, and nothing else:</p>
+  <ul>
+    <li><code>app_session_start</code> — a foreground session begins (parameter: how it was opened).</li>
+    <li><code>app_session_end</code> — that session ends (parameter: its length in seconds).</li>
+    <li><code>stop_detail_open</code> — a departure detail screen was opened.</li>
+    <li><code>widget_bound</code> — a home-screen widget was linked to a favourite (parameter: its size).</li>
+    <li><code>widget_bg_refresh</code> — a background widget refresh ran (parameters: whether the screen
+        was on, and whether a network request was made).</li>
+  </ul>
+  <p>These events carry <strong>no stop names, no favourites, no search terms and no location</strong>.
+     Firebase Analytics also collects the advertising ID by default (see above).</p>
+
+  <h2>Crash reports</h2>
+  <p>Firebase Crashlytics collects crash stack traces plus device model, OS version, app version
+     and session timing. It does not collect your favourites or anything you searched for.</p>
 
   <h2>Children</h2>
   <p>The app is not directed at children and does not knowingly collect data from them.</p>
@@ -68,12 +94,13 @@
      See the <a href="attribution.html">attribution page</a>.</p>
 
   <h2>Contact</h2>
-  <p>Questions about this policy: open an issue at
+  <p>Questions about this policy: email
+     <a href="mailto:jiawei.zhu006@gmail.com">jiawei.zhu006@gmail.com</a>, or open an issue at
      <a href="https://github.com/jiaweizhu301/transport-peek-data/issues">the data repository</a>.</p>
 
   <section class="zh">
     <h1>TransportPeek — 隐私政策</h1>
-    <p class="sub">最后更新：2026-09-07</p>
+    <p class="sub">最后更新：2026-09-17</p>
 
     <h2>一句话</h2>
     <p>TransportPeek 显示悉尼公共交通的发车时间。没有账号、不需要登录、不建用户画像，
@@ -102,8 +129,32 @@
     <p>应用不申请 GPS 或后台定位权限。</p>
 
     <h2>广告</h2>
-    <p>当前版本广告全部关闭（<code>ads.enabled = false</code>）。若将来开启，会先更新本页；
-       欧洲经济区、英国、瑞士的用户在出现个性化广告前会先看到同意弹窗。</p>
+    <p>当前版本<strong>一个广告都不展示</strong>（<code>ads.enabled = false</code>）。
+       但 Google AdMob SDK 随 app 一起打包，并在启动时初始化，因此即使不展示广告，
+       它也可能读取广告 ID。若将来真的开启广告，会先更新本页；欧洲经济区、英国、瑞士的用户
+       在出现个性化广告前会先看到同意弹窗。</p>
+
+    <h2>广告 ID</h2>
+    <p>合并后的权限清单里有 <code>com.google.android.gms.permission.AD_ID</code> 与
+       <code>android.permission.ACCESS_ADSERVICES_AD_ID</code>，由 AdMob SDK 带入。
+       广告 ID 是<strong>可重置的设备标识符</strong>，不是姓名也不是账号，但它也不等于「匿名」——
+       所以本页不再使用「匿名」这个说法，只说这些数据<strong>不与你的姓名或账号关联</strong>。</p>
+
+    <h2>使用统计</h2>
+    <p>应用只上报以下 5 个 Firebase Analytics 事件，没有别的：</p>
+    <ul>
+      <li><code>app_session_start</code> —— 一次前台会话开始（参数：从哪里打开的）。</li>
+      <li><code>app_session_end</code> —— 这次会话结束（参数：时长秒数）。</li>
+      <li><code>stop_detail_open</code> —— 打开了某条收藏的详情页。</li>
+      <li><code>widget_bound</code> —— 桌面小组件绑定到某条收藏（参数：尺寸）。</li>
+      <li><code>widget_bg_refresh</code> —— 后台刷新跑了一次（参数：当时是否亮屏、这次有没有发请求）。</li>
+    </ul>
+    <p>这些事件<strong>不含站名、不含收藏内容、不含搜索词、不含位置</strong>。
+       另外 Firebase Analytics 默认会采集广告 ID（见上一节）。</p>
+
+    <h2>崩溃报告</h2>
+    <p>Firebase Crashlytics 采集崩溃堆栈，以及机型、系统版本、app 版本与会话时间。
+       它不采集你的收藏，也不采集你搜索过什么。</p>
 
     <h2>儿童</h2>
     <p>本应用不面向儿童，也不会有意收集儿童数据。</p>
@@ -113,8 +164,9 @@
        见<a href="attribution.html">归属页</a>。</p>
 
     <h2>联系</h2>
-    <p>对本政策有疑问，请到
-       <a href="https://github.com/jiaweizhu301/transport-peek-data/issues">数据仓库 issues</a> 提出。</p>
+    <p>对本政策有疑问，可以发邮件到
+       <a href="mailto:jiawei.zhu006@gmail.com">jiawei.zhu006@gmail.com</a>，
+       或到 <a href="https://github.com/jiaweizhu301/transport-peek-data/issues">数据仓库 issues</a> 提出。</p>
   </section>
 
   <footer>TransportPeek · <a href="index.html">index</a> · <a href="attribution.html">attribution</a></footer>

@@ -51,6 +51,16 @@ def main():
     if config['force_update']['min_supported_app_version'] != manifest['min_supported_app_version']:
         fails.append('config 与 manifest 的 min_supported_app_version 不一致')
 
+    # M3-3.20：这条约束此前只写在 schema 的 description 文字里，**没有任何东西会红**。
+    # 破掉它的后果不是报错而是显示错：每个刷新周期里有一段时间把好数据标成「已过时」，
+    # 正砸在 M2-5.6 第 4 步那条硬前置上。
+    rt = config['realtime']
+    if not rt['widget_stale_after_minutes'] > rt['widget_min_refresh_minutes']:
+        fails.append(
+            'widget_stale_after_minutes(%s) 必须 > widget_min_refresh_minutes(%s)'
+            % (rt['widget_stale_after_minutes'], rt['widget_min_refresh_minutes'])
+        )
+
     for mode, feed in manifest['feeds'].items():
         gz = os.path.join(d, mode + '.sqlite.gz')
         db_path = os.path.join(d, mode + '.sqlite')
