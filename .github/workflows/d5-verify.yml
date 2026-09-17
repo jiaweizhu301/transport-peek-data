@@ -1,0 +1,88 @@
+# M1-D5 验收：证明「真正删 Release + 删 tag」那两行在线上能跑通。
+#
+# 为什么要单独一个 workflow：
+#   - cleanup_releases.sh 只删「不在最近 3 个 + 不是 latest + 建了 > keep_days 天」的 Release。
+#     仓里长期只有 3 个 Release，index >= 3 那一档压根不存在，所以 D5 的删除分支一直零执行。
+#   - 等自然满足要到 2026-09-25 左右。
+# 做法：造一个**注定被选中**的探针 —— 把 tag 打在 2026-09-06 的 Initial commit 上，
+#      Release 的 created_at 取 commit 日期 → 排到最旧 → index 3 且超期 → 正好被删。
+#      三个真 Release 是 index 0/1/2，全部豁免；探针还是 prerelease + make_latest=false，latest 不受影响。
+name: d5-verify
+
+on:
+  push:
+    paths: ['.github/workflows/d5-verify.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      API: https://api.github.com/repos/${{ github.repository }}
+      PROBE: d5-probe-${{ github.run_id }}
+      OLD_COMMIT: 7d4faff
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: 记录删除前的 Release 清单
+        run: |
+          curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" "$API/releases?per_page=100" \
+            | python -c 'import json,sys;[print(r["tag_name"],r["created_at"]) for r in json.load(sys.stdin)]' \
+            | tee before.txt
+          echo "latest=$(curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" "$API/releases/latest" \
+            | python -c 'import json,sys;print(json.load(sys.stdin)["tag_name"])')" | tee latest.txt
+
+      - name: 造探针 Release（打在最旧的 commit 上，prerelease，不动 latest）
+        run: |
+          code=$(curl -sS -o probe.json -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" -H 'Accept: application/vnd.github+json' \
+            "$API/releases" -d "{\"tag_name\":\"$PROBE\",\"target_commitish\":\"$OLD_COMMIT\",
+              \"name\":\"D5 删除路径验证探针\",\"prerelease\":true,\"make_latest\":\"false\",
+              \"body\":\"M1-D5 验收用，创建后立刻由 cleanup_releases.sh 删除。\"}")
+          echo "HTTP $code"; cat probe.json
+          [ "$code" = "201" ] || { echo "::error::建探针失败"; exit 1; }
+          python -c 'import json;d=json.load(open("probe.json"));print("探针 created_at =",d["created_at"])'
+
+      - name: 断言探针确实存在（删之前）
+        run: |
+          curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" "$API/releases?per_page=100" \
+            | python -c "import json,sys;t=[r['tag_name'] for r in json.load(sys.stdin)];print(t);sys.exit(0 if '$PROBE' in t else 1)"
+          git ls-remote --tags origin "refs/tags/$PROBE" | grep -q "$PROBE" || { echo "::error::探针 tag 没建上"; exit 1; }
+          echo "探针 Release 与 tag 都在 ✓"
+
+      - name: 【被验对象】跑 D5 清理，keep_days=0
+        run: bash scripts/cleanup_releases.sh 0 | tee cleanup.txt
+
+      - name: 断言探针已被删、三个真 Release 一个不少、latest 没变
+        run: |
+          grep -q "本次处理 1 个" cleanup.txt || { echo "::error::清理没有处理到 1 个"; cat cleanup.txt; exit 1; }
+          curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" "$API/releases?per_page=100" \
+            | python -c 'import json,sys;[print(r["tag_name"],r["created_at"]) for r in json.load(sys.stdin)]' > after.txt
+          cat after.txt
+          grep -q "$PROBE" after.txt && { echo "::error::探针 Release 还在，删除分支没生效"; exit 1; }
+          git fetch --tags --prune --prune-tags origin
+          git ls-remote --tags origin "refs/tags/$PROBE" | grep -q "$PROBE" \
+            && { echo "::error::探针 tag 还在，删 tag 那一行没生效"; exit 1; }
+          python - <<'PY'
+          before=[l.split()[0] for l in open('before.txt') if l.strip()]
+          after=[l.split()[0] for l in open('after.txt') if l.strip()]
+          missing=[t for t in before if t not in after]
+          assert not missing, '真 Release 被误删：%s' % missing
+          print('删除前 %d 个真 Release，删除后全部健在：%s' % (len(before), after))
+          PY
+          new_latest=$(curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" "$API/releases/latest" \
+            | python -c 'import json,sys;print(json.load(sys.stdin)["tag_name"])')
+          grep -q "latest=$new_latest" latest.txt || { echo "::error::latest 变了"; exit 1; }
+          echo "D5 通过：探针 Release + tag 均已真删；真 Release 与 latest=$new_latest 均未受影响"
+
+      - name: 写 Job Summary
+        if: always()
+        run: |
+          { echo "## M1-D5 删除分支线上验证"; echo;
+            echo '```'; cat cleanup.txt 2>/dev/null; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
