@@ -57,10 +57,15 @@ jobs:
           [ "$code" = "201" ] || { echo "::error::建探针失败"; exit 1; }
           python -c 'import json;d=json.load(open("probe.json"));print("探针 created_at =",d["created_at"])'
 
-      - name: 断言探针确实存在（删之前）
+      - name: 断言探针确实存在（删之前；Release 列表有最终一致性，带重试）
         run: |
-          curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" "$API/releases?per_page=100" \
-            | python -c "import json,sys;t=[r['tag_name'] for r in json.load(sys.stdin)];print(t);sys.exit(0 if '$PROBE' in t else 1)"
+          for i in $(seq 1 15); do
+            curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" "$API/releases?per_page=100" > rel.json
+            python -c "import json;print(chr(10).join(r['tag_name'] for r in json.load(open('rel.json'))))" > tags.txt
+            if grep -qx "$PROBE" tags.txt; then echo "第 $i 次轮询看到探针 ✓"; break; fi
+            echo "  第 $i 次还没看到，等 4 秒"; sleep 4
+          done
+          grep -qx "$PROBE" tags.txt || { echo "::error::探针 Release 始终没出现"; cat tags.txt; exit 1; }
           git ls-remote --tags origin "refs/tags/$PROBE" | grep -q "$PROBE" || { echo "::error::探针 tag 没建上"; exit 1; }
           echo "探针 Release 与 tag 都在 ✓"
 
@@ -69,16 +74,15 @@ jobs:
 
       - name: 断言探针已被删、三个真 Release 一个不少、latest 没变
         run: |
-          grep -q "本次处理 1 个" cleanup.txt || { echo "::error::清理没有处理到 1 个"; cat cleanup.txt; exit 1; }
+          grep -qE "本次处理 [1-9][0-9]* 个" cleanup.txt || { echo "::error::清理一个都没处理"; cat cleanup.txt; exit 1; }
           curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" "$API/releases?per_page=100" \
             | python -c 'import json,sys;[print(r["tag_name"],r["created_at"]) for r in json.load(sys.stdin)]' > after.txt
           cat after.txt
-          grep -q "$PROBE" after.txt && { echo "::error::探针 Release 还在，删除分支没生效"; exit 1; }
+          grep -q "d5-probe-" after.txt && { echo "::error::还有 d5-probe-* Release 没被删"; exit 1; }
           git fetch --tags --prune --prune-tags origin
-          git ls-remote --tags origin "refs/tags/$PROBE" | grep -q "$PROBE" \
-            && { echo "::error::探针 tag 还在，删 tag 那一行没生效"; exit 1; }
+          git ls-remote --tags origin | grep -q "refs/tags/d5-probe-" && { echo "::error::还有 d5-probe-* tag 没被删"; exit 1; }
           python - <<'PY'
-          before=[l.split()[0] for l in open('before.txt') if l.strip()]
+          before=[l.split()[0] for l in open('before.txt') if l.strip() and not l.startswith('d5-probe-')]
           after=[l.split()[0] for l in open('after.txt') if l.strip()]
           missing=[t for t in before if t not in after]
           assert not missing, '真 Release 被误删：%s' % missing
