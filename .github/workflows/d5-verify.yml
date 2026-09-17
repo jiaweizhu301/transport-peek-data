@@ -9,9 +9,9 @@
 #      三个真 Release 是 index 0/1/2，全部豁免；探针还是 prerelease + make_latest=false，latest 不受影响。
 name: d5-verify
 
+# 2026-09-17 已验收通过（run 35212215984）。改为**只手动触发**，避免改这个文件时误跑。
+# 要复验：Actions → d5-verify → Run workflow。
 on:
-  push:
-    paths: ['.github/workflows/d5-verify.yml']
   workflow_dispatch:
 
 permissions:
