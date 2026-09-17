@@ -25,7 +25,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       API: https://api.github.com/repos/${{ github.repository }}
       PROBE: d5-probe-${{ github.run_id }}
-      OLD_COMMIT: 7d4faff
+      OLD_COMMIT: 7d4faff5af3cc716b4e0a2e6a2e55fc0190f1416
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -40,11 +40,19 @@ jobs:
 
       - name: 造探针 Release（打在最旧的 commit 上，prerelease，不动 latest）
         run: |
-          code=$(curl -sS -o probe.json -w '%{http_code}' -X POST \
-            -H "Authorization: Bearer $GITHUB_TOKEN" -H 'Accept: application/vnd.github+json' \
-            "$API/releases" -d "{\"tag_name\":\"$PROBE\",\"target_commitish\":\"$OLD_COMMIT\",
-              \"name\":\"D5 删除路径验证探针\",\"prerelease\":true,\"make_latest\":\"false\",
-              \"body\":\"M1-D5 验收用，创建后立刻由 cleanup_releases.sh 删除。\"}")
+          python - > payload.json <<PY
+          import json, os
+          print(json.dumps({
+              "tag_name": os.environ["PROBE"],
+              "target_commitish": os.environ["OLD_COMMIT"],
+              "name": "D5 删除路径验证探针",
+              "body": "M1-D5 验收用，创建后立刻由 cleanup_releases.sh 删除。",
+              "prerelease": True,
+              "make_latest": "false",
+          }))
+          PY
+          cat payload.json
+          code=$(curl -sS -o probe.json -w '%{http_code}' -X POST             -H "Authorization: Bearer $GITHUB_TOKEN" -H 'Accept: application/vnd.github+json'             -H 'Content-Type: application/json'             "$API/releases" --data-binary @payload.json)
           echo "HTTP $code"; cat probe.json
           [ "$code" = "201" ] || { echo "::error::建探针失败"; exit 1; }
           python -c 'import json;d=json.load(open("probe.json"));print("探针 created_at =",d["created_at"])'
