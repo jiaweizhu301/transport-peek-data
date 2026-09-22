@@ -1,0 +1,98 @@
+# M4-4.1 · 早高峰原始快照采集
+#
+# 与 peak-sample.yml 的区别：那个是**制造流量**（去戳我们自己的 Worker，好让 Cloudflare
+# 记下 cpuTime）；这个是**采集上游原始 feed**，给 4.1 的 D1 写入行数那本账算样本。
+#
+# 为什么不放本机：2026-09-22 试过一次，机器 02:18 进 S3 睡眠、10:59 才醒，
+# 07:30–09:00 整个睡过去。早高峰一周只有 5 次，不能押在一台会睡觉的机器上。
+#
+# 只抓不算：解码与签名口径住在主仓（worker/src/decode.js）。复制一份到这里就是两份实现，
+# 这个项目已经为「两份 gen_manifest.py」付过学费。这里只产出原始 protobuf artifact，
+# 分析在主仓用 worker/scripts/peak-sample-analyse.mjs 离线跑。
+name: m4-peak-capture
+
+on:
+  schedule:
+    # 目标是悉尼 07:25 起跑（比 07:30 早 5 分钟，留给 runner 排队与 checkout）。
+    # cron 是 UTC，悉尼有夏令时，所以两条都挂上，再由 guard 按当地时间决定跑不跑：
+    #   AEDT（10 月–4 月，UTC+11）：20:25 UTC = 悉尼 07:25
+    #   AEST（4 月–10 月，UTC+10）：21:25 UTC = 悉尼 07:25
+    # 星期：悉尼的周一–周五 = UTC 的周日–周四。
+    - cron: "25 20 * * 0-4"
+    - cron: "25 21 * * 0-4"
+  workflow_dispatch:
+    inputs:
+      windows:
+        description: "采多少个窗口（默认 80，× 65 s ≈ 87 分钟）"
+        required: false
+        default: "80"
+
+concurrency:
+  group: m4-peak-capture
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: 只在悉尼工作日早高峰继续
+        id: guard
+        run: |
+          H=$(TZ=Australia/Sydney date +%-H)
+          M=$(TZ=Australia/Sydney date +%-M)
+          D=$(TZ=Australia/Sydney date +%u)
+          echo "悉尼 $(TZ=Australia/Sydney date '+%F %H:%M %Z')（周 $D）"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "手动触发，跳过时间窗检查"; echo "go=1" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # 两条 cron 里每天只有一条落在 07:xx，另一条差一小时。判据按「小时 = 7」，
+          # 不按注释里算好的时差 —— 夏令时边界上算错时差是这个仓踩过的坑。
+          if [ "$H" -eq 7 ] && [ "$D" -le 5 ]; then
+            echo "go=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "不在悉尼工作日 07:xx，本次不采（4.1 的判据只认早高峰）"
+            echo "go=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.guard.outputs.go == '1'
+
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.go == '1'
+        with:
+          node-version: "20"
+
+      - name: 采集原始快照
+        if: steps.guard.outputs.go == '1'
+        env:
+          TFNSW_API_KEY: ${{ secrets.TFNSW_API_KEY }}
+        run: |
+          node scripts/peak-capture.mjs \
+            --out peak-raw \
+            --windows "${{ github.event.inputs.windows || '80' }}"
+          du -sh peak-raw
+          ls peak-raw | wc -l
+
+      - name: 上传 artifact
+        if: steps.guard.outputs.go == '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: peak-raw-${{ github.run_id }}
+          path: peak-raw/
+          retention-days: 14
+
+      - name: 摘要
+        if: steps.guard.outputs.go == '1'
+        run: |
+          {
+            echo "## M4-4.1 早高峰快照采集完成"
+            echo ""
+            echo "- 悉尼时间：$(TZ=Australia/Sydney date '+%F %H:%M %Z')"
+            echo "- artifact：\`peak-raw-${{ github.run_id }}\`（保留 14 天）"
+            echo ""
+            echo "分析在主仓跑，**不要在这里加解码逻辑**："
+            echo '```'
+            echo "node worker/scripts/peak-sample-analyse.mjs --in <解开的 peak-raw> --json out.json"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
