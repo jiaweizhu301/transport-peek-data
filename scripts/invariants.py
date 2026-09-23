@@ -25,6 +25,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import tripoffsets    # noqa: E402  —— trips.offsets 的唯一 Python 编解码实现
+from build_db import PARENT_MERGE_METERS, haversine_m  # noqa: E402  并组判据的唯一真相
+from gtfs_modes import self_parent  # noqa: E402
 from build_db import (NON_REVENUE_HEADSIGNS, is_non_revenue_headsign,  # noqa: E402  唯一真相来源
                       service_today)
 
@@ -172,6 +174,27 @@ def check(db_path, mode):
     if bad:
         fails.append('有车停、却既不是父站也没有父站（搜不到、实时映射不上）的站 %d 个：%s'
                      % (len(bad), ', '.join('%s %s' % r for r in bad[:5])))
+
+    # 4c. **同一个物理站只许有一个父站**（非 self_parent 的 mode；M4 · 2026-09-23 轻轨逼出来的）
+    #     按站提父站的第一版把 innerwest 同一站的两个方向站台各提成一个父站：搜「Dulwich Grove」
+    #     出两行一模一样的结果，点错一行只看得到一个方向（21 组，相距 3–67 m）。
+    #     判据与 build_db 并组用的是同一个：name_normalized 相同 + 距离 ≤ PARENT_MERGE_METERS。
+    #     公交不查：同名对街站是真的不同站，靠 TSN 区分。
+    if not self_parent(mode):
+        ps = db.execute('SELECT stop_id, name, name_normalized, lat, lon FROM stops WHERE location_type = 1').fetchall()
+        by = {}
+        for r in ps:
+            by.setdefault(r[2], []).append(r)
+        dup = []
+        for group in by.values():
+            for i in range(len(group)):
+                for j in range(i + 1, len(group)):
+                    a, b = group[i], group[j]
+                    if haversine_m(a[3], a[4], b[3], b[4]) <= PARENT_MERGE_METERS:
+                        dup.append('%s %s / %s' % (a[1], a[0], b[0]))
+        if dup:
+            fails.append('同名且相距 ≤ %d m 的父站 %d 组（同一个物理站被拆成多个父站）：%s'
+                         % (PARENT_MERGE_METERS, len(dup), '; '.join(dup[:5])))
 
     # 6. platform_code 下限
     n = q1('SELECT count(*) FROM stops WHERE platform_code IS NOT NULL')

@@ -32,9 +32,31 @@ import sys
 import zipfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gtfs_modes import drop_route_types_for, feeds_for, MODES, PUBLISH_MODES, parse_days_spec
+from gtfs_modes import drop_route_types_for, feeds_for, MODES, PUBLISH_MODES, parse_days_spec, self_parent
 
 SCHEMA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'schema.sql')
+
+# 同一个物理站的几个独立站台（没有 parent_station），在非 self_parent 的 mode 里并成**一个**父站。
+# 判据 = name_normalized 相同 + 两两（单链）距离 ≤ 本阈值。阈值是 2026-09-23 在轻轨上实测定的：
+#   同名独立站对的距离 2.9 – 66.6 m（21 对，innerwest 同站两个方向的站台）；
+#   不同名独立站之间最近 272 m。取 150 m：同名最大值的 2.25 倍、不同名最小值的 0.55 倍。
+# 火车 / metro 的父站本来就有上游给的 parent_station，不走这条；公交是 self_parent，也不走
+# （公交同名对街站是真的不同站，靠 TSN 区分，不能并）。
+PARENT_MERGE_METERS = 150.0
+
+
+def haversine_m(lat1, lon1, lat2, lon2):
+    import math
+    r = 6371000.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    a = (math.sin((p2 - p1) / 2) ** 2
+         + math.cos(p1) * math.cos(p2) * math.sin(math.radians(lon2 - lon1) / 2) ** 2)
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+def stop_id_order(sid):
+    """父站 ID 的稳定选择顺序：先按长度、再按字面（纯数字 ID 等价于按数值，混合 ID 也有确定顺序）。"""
+    return (len(sid), sid)
 
 # ---------------------------------------------------------------------------
 # 非营运（空车调车 / 不载客）班次的 headsign 清单。**按 headsign 过滤，不按 route 或 agency。**
@@ -607,16 +629,45 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
         del trips[tid]
 
     used_stops = set(used_stop_ids)
-    # ---- 按站提父站：有车停、location_type=0、又没有父站的站，自己就是父站（1:1 退化）。
+    # ---- 按站提父站：有车停、location_type=0、又没有父站的站。
     # 站本身既是可停靠点也是可收藏点。不改客户端：`childStopIds` 的
-    # `parent_station = ? OR stop_id = ?` 本来就会返回它自己。
-    # 公交全网都是这种站 → 结果与原来的「整体提升」逐字相同（没车停的站本来就不进库）；
-    # 轻轨 innerwest 的 44 站由此变成可搜索的父站。只看**有车停**的站：没车停的孤站不进库，
-    # 提不提都一样，而提它们会让火车 / metro 的库平白变动。
-    for sid in used_stops:
-        v = stops.get(sid)
-        if v and v[5] == 0 and not v[6]:
+    # `parent_station = ? OR stop_id = ?` 本来就会返回它自己和它的子站。
+    # 只看**有车停**的站：没车停的孤站不进库，提不提都一样，而提它们会让火车 / metro 的库平白变动。
+    orphans = sorted((sid for sid in used_stops
+                      if sid in stops and stops[sid][5] == 0 and not stops[sid][6]), key=stop_id_order)
+    if self_parent(mode):
+        # 公交：每个站就是自己的父站（1:1）。结果与原来的「整体提升」逐字相同。
+        for sid in orphans:
+            v = stops[sid]
             stops[sid] = (v[0], v[1], v[2], v[3], v[4], 1, v[6], v[7])
+    else:
+        # 非 self_parent（轻轨 innerwest）：同一个物理站的两个方向站台原来各提成一个父站 ——
+        # 搜索出两行一模一样的结果，点错一行只看得到一个方向（m4/int 重建 0ec8ba1 后发现 21 组）。
+        # 按「name_normalized 相同 + 单链距离 ≤ PARENT_MERGE_METERS」分组；每组 ID 最小的那个站
+        # （stop_id_order）提成父站，其余站台挂到它下面当子站。同一输入永远得到同一个父站 ID，
+        # 而且用的是真实 stop_id，不造合成 ID（收藏里存的就是它）。
+        by_name = {}
+        for sid in orphans:
+            by_name.setdefault(stops[sid][2], []).append(sid)
+        for group in by_name.values():
+            clusters = []
+            for sid in group:                                   # 已按 stop_id_order 排好，结果稳定
+                v = stops[sid]
+                hit = [c for c in clusters if any(
+                    haversine_m(v[3], v[4], stops[o][3], stops[o][4]) <= PARENT_MERGE_METERS for o in c)]
+                merged = [sid]
+                for c in hit:
+                    merged += c
+                    clusters.remove(c)
+                clusters.append(merged)
+            for c in clusters:
+                c.sort(key=stop_id_order)
+                parent = c[0]
+                v = stops[parent]
+                stops[parent] = (v[0], v[1], v[2], v[3], v[4], 1, v[6], v[7])
+                for child in c[1:]:
+                    w = stops[child]
+                    stops[child] = (w[0], w[1], w[2], w[3], w[4], 0, parent, w[7])
     keep_stops = set(used_stops)
     for sid in list(used_stops):
         p = stops[sid][6] if sid in stops else None

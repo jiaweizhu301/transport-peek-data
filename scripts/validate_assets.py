@@ -95,12 +95,12 @@ def main():
             expect = db.execute(
                 'SELECT count(*) FROM stops WHERE parent_station IS NOT NULL').fetchone()[0]
             if not self_parent(mode):
-                # 没有子站的父站各有一行自映射（gen_manifest.stop_parents 的 docstring）
+                # 自己就是停靠点的父站各有一行自映射（gen_manifest.stop_parents 的 docstring）
                 expect += db.execute(
-                    'SELECT count(*) FROM stops p WHERE p.location_type = 1 AND NOT EXISTS'
-                    ' (SELECT 1 FROM stops c WHERE c.parent_station = p.stop_id)').fetchone()[0]
+                    'SELECT count(*) FROM stops p WHERE p.location_type = 1 AND EXISTS'
+                    ' (SELECT 1 FROM pattern_stops ps WHERE ps.stop_id = p.stop_id)').fetchone()[0]
             if len(sp['stops']) != expect:
-                fails.append('%s: stop_parents 条数 %d != 应有 %d（子站 + 非 self_parent 的无子站父站）'
+                fails.append('%s: stop_parents 条数 %d != 应有 %d（子站 + 非 self_parent 的停车父站）'
                              % (mode, len(sp['stops']), expect))
             # 覆盖：每个有车停的站，Worker 都要映射得上 —— 在 stop_parents 里，或 mode 是 self_parent。
             # 这是「实时全丢」那一类缺陷在资产层的判据（公交一次、轻轨 L1 一次）。

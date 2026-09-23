@@ -56,8 +56,9 @@ def utcnow():
 def stop_parents(db_path, mode, static_version):
     """子站 -> 父站 + 站台号。形状与 fixtures/stop_parents.<mode>.json 逐字段一致。
 
-    **没有子站的父站也要导出一行自映射**（非 self_parent 的 mode）：它们自己就是停靠点
-    （build_db 按站提父站的结果，例如轻轨 innerwest 的 44 站），实时 feed 里出现的就是它们的
+    **自己就是停靠点的父站也要导出一行自映射**（非 self_parent 的 mode）：build_db 按站提父站的
+    结果（例如轻轨 innerwest 同一物理站的两个站台并成一个父站，父站是其中一个站台），实时 feed
+    里出现的就是它们的
     stop_id。Worker 对 stop_parents 查不到的 stop_id 一律丢掉，不导出这一行 = 这些站实时全丢
     （2026-09-23 查出）。self_parent 的 mode（公交）不导出：Worker 按 MODE_TOPOLOGY 把站当自己，
     导出 3.2 万行自映射首灌要吃约 32% 的免费写入额度。
@@ -67,9 +68,11 @@ def stop_parents(db_path, mode, static_version):
         'SELECT stop_id, parent_station, platform_code FROM stops '
         'WHERE parent_station IS NOT NULL ORDER BY stop_id').fetchall()
     if not self_parent(mode):
+        # 自己就是停靠点的父站：没有子站的（按站提升的单站台），以及同一物理站的几个站台
+        # 并组后被选作父站的那个（它有子站，但自己也有车停）。火车 / metro 的父站不停车，0 行。
         rows += db.execute(
             'SELECT p.stop_id, p.stop_id, p.platform_code FROM stops p WHERE p.location_type = 1'
-            ' AND NOT EXISTS (SELECT 1 FROM stops c WHERE c.parent_station = p.stop_id)'
+            ' AND EXISTS (SELECT 1 FROM pattern_stops ps WHERE ps.stop_id = p.stop_id)'
             ' ORDER BY p.stop_id').fetchall()
         rows.sort(key=lambda r: r[0])
     db.close()
