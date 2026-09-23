@@ -22,6 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SCHEMAS = os.path.join(os.path.dirname(HERE), 'schemas')
 sys.path.insert(0, HERE)
 import build_db  # noqa: E402  非营运词表的唯一真相
+from gtfs_modes import self_parent  # noqa: E402  与 Worker MODE_TOPOLOGY 同一个标记
 
 
 def sha256(p):
@@ -100,8 +101,19 @@ def main():
                    if s['stop_id'] not in known or s['parent_stop_id'] not in parents]
             if bad:
                 fails.append('%s: stop_parents 有 %d 条指向库里不存在的站' % (mode, len(bad)))
-            if not any(s['platform_code'] for s in sp['stops']):
-                fails.append('%s: stop_parents 全部 platform_code 为 null' % mode)
+            # 自成父站的 mode（公交）没有子站，stop_parents 按定义就是 0 条、也没有站台号。
+            # 豁免条件读 gtfs_modes.self_parent —— 与 Worker 的 MODE_TOPOLOGY 同一个标记。
+            # 反过来也要核：标记与库里的真实形状必须一致，否则 Worker 会按错的规则映射。
+            if self_parent(mode):
+                if sp['stops']:
+                    fails.append('%s: 标记为 self_parent，但 stop_parents 有 %d 条子站'
+                                 % (mode, len(sp['stops'])))
+            else:
+                if not sp['stops']:
+                    fails.append('%s: 没有标记 self_parent，但 stop_parents 是 0 条 —— '
+                                 'Worker 会把这个 mode 的实时全部丢掉' % mode)
+                elif not any(s['platform_code'] for s in sp['stops']):
+                    fails.append('%s: stop_parents 全部 platform_code 为 null' % mode)
         db.close()
         print('OK   %s: gz %.2f MB / sha256 / meta / stop_parents 全部对账一致'
               % (mode, feed['size_bytes'] / 1e6))

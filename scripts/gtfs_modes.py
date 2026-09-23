@@ -41,12 +41,14 @@ MODES = {
         'keep_agencies': ['SydneyTrains'],
         'route_type': 2,
         'days': 16,                     # 体积逼的，见上
+        'self_parent': False,
     },
     'metro': {
         'path': '/v2/gtfs/schedule/metro',
         'keep_agencies': None,          # 单 agency（SMNW），不过滤
         'route_type': 1,
         'days': 120,                    # 砍窗口对 metro 零收益
+        'self_parent': False,
     },
     # 以下 M1 不发布，仅保留端点定义（M4+ 启用）
     'lightrail': {
@@ -54,6 +56,7 @@ MODES = {
         'feeds': ['/v1/gtfs/schedule/lightrail/innerwest',
                   '/v1/gtfs/schedule/lightrail/cbdandsoutheast'],
         'keep_agencies': None, 'route_type': 0,
+        'self_parent': False,
         # newcastle（/v1/gtfs/schedule/lightrail/newcastle，80,244 B）存在但不在悉尼，M4 不收
     },
     'ferries': {'path': '/v1/gtfs/schedule/ferries/sydneyferries', 'keep_agencies': None, 'route_type': 4},
@@ -68,6 +71,10 @@ MODES = {
         #  4   渡轮 —— buses feed 里**混着一条 route_type=4 的渡轮 route**（188 趟），
         #      与将来独立的 ferries feed 重叠，与当年 NSWTrains 混进 sydneytrains 同形。
         'drop_route_types': [712, 4],
+        # 3.7 万站 parent_station 全空 → build_db 整体提成父站 → 生产 stop_parents 为 0 条。
+        # Worker 靠同名标记（worker/src/index.js 的 MODE_TOPOLOGY.selfParent）把实时的
+        # stop_id 当作自己的父站；没有它，公交实时会被全部丢掉。
+        'self_parent': True,
     },
 }
 
@@ -93,6 +100,17 @@ def feeds_for(mode):
 def drop_route_types_for(mode):
     """该 mode 要按 route_type 剔除的集合（见 MODES 里各自的理由）。"""
     return set(MODES.get(mode, {}).get('drop_route_types', ()))
+
+
+def self_parent(mode):
+    """该 mode 的站是否「自己就是父站」（没有父站 / 站台子站两层）。
+
+    **发布的 mode 必须显式写 'self_parent'**，缺了就抛 —— 这个值决定 Worker 是否把
+    查不到父站的 stop_id 当作自己；默认错一次，要么公交实时全空，要么火车的真缺陷被吞掉。
+    """
+    if 'self_parent' not in MODES.get(mode, {}):
+        raise KeyError('gtfs_modes.MODES[%r] 没写 self_parent —— 必须显式写 True / False' % mode)
+    return MODES[mode]['self_parent']
 
 
 def days_for(mode):
