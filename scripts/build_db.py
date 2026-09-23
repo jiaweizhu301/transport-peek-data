@@ -515,14 +515,11 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
     # 这条是 golden 加了公交样本之后才暴露的 —— stop_search.buses.json 五个前缀全是 0 命中，
     # 其中包括 'liverpool' 这种明摆着存在的站。**没有那份 golden，它会一路活到 4.7。**
     #
-    # 处置：一个 mode 若全网零 parent_station，就把它的站**整体提成父站**
-    # （站本身既是可停靠点也是可收藏点，1:1 退化）。不改客户端：
-    # `childStopIds` 的 `parent_station = ? OR stop_id = ?` 本来就会返回它自己。
-    if stops and not any(v[6] for v in stops.values()):
-        stops = {k: (v[0], v[1], v[2], v[3], v[4], 1, v[6], v[7]) for k, v in stops.items()}
-        self_parent = True
-    else:
-        self_parent = False
+    # 处置：见下面 used_stops 之后的「按站提父站」。
+    # 原来这里是「一个 mode 若全网零 parent_station，就把它的站整体提成父站」——
+    # 轻轨一半有父站（cbdandsoutheast）、一半没有（innerwest 的 44 站），整体规则没触发，
+    # 那 44 站 location_type=0 又没有父站：搜不到、也进不了 stop_parents，实时全丢
+    # （2026-09-23 查出）。所以改成**按站**判断，而且要等知道哪些站真有车停之后再判。
 
     # ---- 建库（索引留到灌完数据再建）
     db_tmp = out_path + '.tmp'
@@ -610,6 +607,16 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
         del trips[tid]
 
     used_stops = set(used_stop_ids)
+    # ---- 按站提父站：有车停、location_type=0、又没有父站的站，自己就是父站（1:1 退化）。
+    # 站本身既是可停靠点也是可收藏点。不改客户端：`childStopIds` 的
+    # `parent_station = ? OR stop_id = ?` 本来就会返回它自己。
+    # 公交全网都是这种站 → 结果与原来的「整体提升」逐字相同（没车停的站本来就不进库）；
+    # 轻轨 innerwest 的 44 站由此变成可搜索的父站。只看**有车停**的站：没车停的孤站不进库，
+    # 提不提都一样，而提它们会让火车 / metro 的库平白变动。
+    for sid in used_stops:
+        v = stops.get(sid)
+        if v and v[5] == 0 and not v[6]:
+            stops[sid] = (v[0], v[1], v[2], v[3], v[4], 1, v[6], v[7])
     keep_stops = set(used_stops)
     for sid in list(used_stops):
         p = stops[sid][6] if sid in stops else None

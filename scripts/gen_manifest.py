@@ -20,7 +20,7 @@ import sqlite3
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gtfs_modes import PUBLISH_MODES
+from gtfs_modes import PUBLISH_MODES, self_parent
 import build_db
 
 # manifest/config 的 schema_version（契约 const 1）
@@ -54,11 +54,24 @@ def utcnow():
 
 
 def stop_parents(db_path, mode, static_version):
-    """子站 -> 父站 + 站台号。形状与 fixtures/stop_parents.<mode>.json 逐字段一致。"""
+    """子站 -> 父站 + 站台号。形状与 fixtures/stop_parents.<mode>.json 逐字段一致。
+
+    **没有子站的父站也要导出一行自映射**（非 self_parent 的 mode）：它们自己就是停靠点
+    （build_db 按站提父站的结果，例如轻轨 innerwest 的 44 站），实时 feed 里出现的就是它们的
+    stop_id。Worker 对 stop_parents 查不到的 stop_id 一律丢掉，不导出这一行 = 这些站实时全丢
+    （2026-09-23 查出）。self_parent 的 mode（公交）不导出：Worker 按 MODE_TOPOLOGY 把站当自己，
+    导出 3.2 万行自映射首灌要吃约 32% 的免费写入额度。
+    """
     db = sqlite3.connect('file:%s?immutable=1' % db_path.replace('\\', '/'), uri=True)
     rows = db.execute(
         'SELECT stop_id, parent_station, platform_code FROM stops '
         'WHERE parent_station IS NOT NULL ORDER BY stop_id').fetchall()
+    if not self_parent(mode):
+        rows += db.execute(
+            'SELECT p.stop_id, p.stop_id, p.platform_code FROM stops p WHERE p.location_type = 1'
+            ' AND NOT EXISTS (SELECT 1 FROM stops c WHERE c.parent_station = p.stop_id)'
+            ' ORDER BY p.stop_id').fetchall()
+        rows.sort(key=lambda r: r[0])
     db.close()
     return {
         'mode': mode,

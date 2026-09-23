@@ -155,6 +155,24 @@ def check(db_path, mode):
     if n:
         fails.append('父站缺失的子站 %d 个' % n)
 
+    # 4b. **每个有车停的站，都必须能被搜到 / 收藏**（M4 · 2026-09-23 轻轨 L1 逼出来的）
+    #     = 它自己是父站（location_type = 1），或者它的父站是父站。
+    #     两次同形的缺陷都会被这一条抓住：公交全网零父站（4.3 当天）、轻轨 L1 的 44 个站
+    #     location_type=0 又没有父站（管线只在「整个 mode 零 parent_station」时才提父站，
+    #     轻轨一半有父站 → 没触发 → 这 44 站既搜不到、也进不了 stop_parents、实时全丢）。
+    #     失败信息列出具体站，因为挂了的时候人在排查**数据**。
+    bad = db.execute(
+        'SELECT DISTINCT s.stop_id, s.name FROM pattern_stops ps JOIN stops s ON s.stop_id = ps.stop_id'
+        # ⚠ 不能写成 NOT (lt = 1 OR parent_station IN (…))：parent_station 为 NULL 时 IN 得 NULL，
+        # NOT (假 OR NULL) 仍是 NULL，WHERE 把它当假 —— 正好把要抓的那一类全部漏掉。
+        # 第一版就是这么写的，在修复前的轻轨库上**恒过**（2026-09-23 实测），所以显式判空。
+        ' WHERE s.location_type <> 1 AND (s.parent_station IS NULL'
+        ' OR s.parent_station NOT IN (SELECT stop_id FROM stops WHERE location_type = 1))'
+        ' ORDER BY s.stop_id').fetchall()
+    if bad:
+        fails.append('有车停、却既不是父站也没有父站（搜不到、实时映射不上）的站 %d 个：%s'
+                     % (len(bad), ', '.join('%s %s' % r for r in bad[:5])))
+
     # 6. platform_code 下限
     n = q1('SELECT count(*) FROM stops WHERE platform_code IS NOT NULL')
     floor = MIN_PLATFORM_CODE.get(mode, 0)

@@ -94,9 +94,23 @@ def main():
                 'SELECT stop_id FROM stops WHERE location_type = 1')}
             expect = db.execute(
                 'SELECT count(*) FROM stops WHERE parent_station IS NOT NULL').fetchone()[0]
+            if not self_parent(mode):
+                # 没有子站的父站各有一行自映射（gen_manifest.stop_parents 的 docstring）
+                expect += db.execute(
+                    'SELECT count(*) FROM stops p WHERE p.location_type = 1 AND NOT EXISTS'
+                    ' (SELECT 1 FROM stops c WHERE c.parent_station = p.stop_id)').fetchone()[0]
             if len(sp['stops']) != expect:
-                fails.append('%s: stop_parents 条数 %d != 库里子站数 %d'
+                fails.append('%s: stop_parents 条数 %d != 应有 %d（子站 + 非 self_parent 的无子站父站）'
                              % (mode, len(sp['stops']), expect))
+            # 覆盖：每个有车停的站，Worker 都要映射得上 —— 在 stop_parents 里，或 mode 是 self_parent。
+            # 这是「实时全丢」那一类缺陷在资产层的判据（公交一次、轻轨 L1 一次）。
+            if not self_parent(mode):
+                mapped = {x['stop_id'] for x in sp['stops']}
+                unmapped = sorted(r[0] for r in db.execute('SELECT DISTINCT stop_id FROM pattern_stops')
+                                  if r[0] not in mapped)
+                if unmapped:
+                    fails.append('%s: 有车停、却不在 stop_parents 里的站 %d 个（Worker 会丢掉它们的实时）：%s'
+                                 % (mode, len(unmapped), ', '.join(unmapped[:5])))
             bad = [s for s in sp['stops']
                    if s['stop_id'] not in known or s['parent_stop_id'] not in parents]
             if bad:
