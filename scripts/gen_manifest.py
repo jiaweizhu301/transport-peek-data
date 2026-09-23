@@ -27,6 +27,14 @@ import build_db
 MANIFEST_SCHEMA_VERSION = 1
 CONFIG_SCHEMA_VERSION = 1
 # 最低可用 app versionCode。只在破坏性变更时抬高（同时 manifest 与 config 两处）。
+#
+# ⚠ M4 的 schema 2 是破坏性变更（时刻表库 meta.schema_version 1 → 2，客户端硬切、不双读）。
+# 这个常量**必须**在发 M4 的 prerelease 之前抬到 M4 那个 APK 的 versionCode。
+# 现在没有抬：M4 APK 的 versionCode 是发版时用 `-Pversion_code` 定的，此刻还不存在，
+# 在这里猜一个数就是把一个未验证的假设写死进契约。改用 `--min-app-version` 在发版时传，
+# 不传就沿用下面这个值（= M3 的口径，只够让 M3 的包收到 UNSUPPORTED_SCHEMA 而不是一个
+# 更清楚的「请升级」提示 —— 功能上安全，提示上不够好）。
+# 这条挂在 checklist 4.15 的关账清单上。
 MIN_SUPPORTED_APP_VERSION = 1
 
 PAGES_BASE_DEFAULT = 'https://jiaweizhu301.github.io/transport-peek-data'
@@ -82,7 +90,7 @@ def feed_entry(build_dir, mode, base_url):
     }
 
 
-def build_config():
+def build_config(min_app_version=MIN_SUPPORTED_APP_VERSION):
     """契约 4b。首版广告全关；realtime 按 M0-0.14 的定稿取 60 s（不是区间取中的 45）。"""
     return {
         'schema_version': CONFIG_SCHEMA_VERSION,
@@ -103,16 +111,17 @@ def build_config():
             # M2-4.3（2026-09-16 裁定）：Widget 后台周期刷新 = DP4-A 的 60 分钟。
             # 30 分钟在 M2 的四本账里过不了：Widget 后台是账④ 模型里原本不存在的第二个
             # 请求源，30 分钟 ≈ 每设备每天 48 次，把已经贴线的请求数直接打穿。
+            # M3-3.20：这份副本此前停在 30，而线上（data 仓）跑的是 60 —— 任何人从主仓
+            # 重拷一次就会把线上静默打回 30。现已收口，两边逐字一致。
             'widget_min_refresh_minutes': 60,
             'stale_after_seconds': 120,
             # 必须 > widget_min_refresh_minutes，否则每个正常刷新周期里都有一段时间
             # 把好数据显示成「已过时」。75 = 60 + 15 余量，取最小合理值。
-            # 该约束仅在 DP4-A/B（Periodic）档成立；DP4-C'/D 下刷新本就稀疏，
-            # 灰显是预期行为而非配置错误。
+            # 这条约束由 validate_assets.py 断言（M3-3.20），不再只写在 schema 的描述文字里。
             'widget_stale_after_minutes': 75,
         },
         'force_update': {
-            'min_supported_app_version': MIN_SUPPORTED_APP_VERSION,
+            'min_supported_app_version': min_app_version,
             'message_key': 'force_update_generic',
         },
     }
@@ -126,6 +135,8 @@ def main():
     ap.add_argument('--channel', default='stable', choices=['stable', 'prerelease'])
     ap.add_argument('--pages-base', default=PAGES_BASE_DEFAULT)
     ap.add_argument('--modes', nargs='*', default=None)
+    ap.add_argument('--min-app-version', type=int, default=MIN_SUPPORTED_APP_VERSION,
+                    help='最低可用 app versionCode。M4 schema 2 发版时必须传 M4 APK 的 versionCode')
     a = ap.parse_args()
 
     base = 'https://github.com/%s/releases/download/%s' % (a.repo, a.tag)
@@ -143,7 +154,7 @@ def main():
     manifest = {
         'schema_version': MANIFEST_SCHEMA_VERSION,
         'generated_at': utcnow(),
-        'min_supported_app_version': MIN_SUPPORTED_APP_VERSION,
+        'min_supported_app_version': a.min_app_version,
         'feeds': feeds,
         'config_url': base + '/config.json',
         'privacy_policy_url': a.pages_base + '/privacy.html',
@@ -154,7 +165,7 @@ def main():
     with open(os.path.join(a.build_dir, 'manifest.json'), 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, indent=1)
     with open(os.path.join(a.build_dir, 'config.json'), 'w', encoding='utf-8') as f:
-        json.dump(build_config(), f, ensure_ascii=False, indent=1)
+        json.dump(build_config(a.min_app_version), f, ensure_ascii=False, indent=1)
     print('manifest.json  feeds=%s channel=%s' % (','.join(feeds), a.channel), flush=True)
 
     # 非营运 headsign 词表：与 fixtures/non_revenue_headsigns.json 同一份真相（build_db 的常量），
