@@ -27,6 +27,8 @@ const OUT = arg('--out', 'peak-raw');
 const WINDOWS = +arg('--windows', '80');
 const PERIOD_MS = +arg('--period-ms', '65000');   // 线上 TTL 60 s，65 s 才保证是一次新刷新
 const ALERTS_EVERY = +arg('--alerts-every', '10');
+// 悉尼当地的 HH:MM，到点才开采。空 = 立刻开采（手动触发走这条）。
+const WAIT_UNTIL = arg('--wait-until', '');
 
 const KEY = (process.env.TFNSW_API_KEY || '').trim();
 if (!KEY) throw new Error('缺 TFNSW_API_KEY');
@@ -98,6 +100,34 @@ async function one(name, path, w) {
     index.push({ w, feed: name, error: msg });
   }
 }
+
+// ---------- 在 runner 里等到点再开采（M4-4.1 · 2026-09-23）----------
+//
+// 为什么需要它：GitHub 的 schedule **不准时**。2026-09-22 那天两条 cron
+// （UTC 20:25 / 21:25 = 悉尼 07:25）实际在 UTC 23:01 / 23:40 才起跑 ——
+// 延迟 2h36m 与 2h15m，落到悉尼 09:01 / 09:40，guard 按「小时 = 7」正确跳过，
+// **两个 run 都是绿的、零 artifact，早高峰整个丢掉**。
+//
+// 把 guard 拓宽到 7–8 点仍然是在赌延迟落进那个窗口，而那天连 8 点都没落进。
+// 所以改机制：**cron 往前排、起来之后在 runner 里 sleep 到点**。
+// 准时起的 run 等一会儿；延迟两小时的那条正好落在开采时刻。
+async function waitUntilSydney(hhmm) {
+  const [hh, mm] = hhmm.split(':').map((x) => +x);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) throw new Error(`--wait-until 形如 07:25，实得 ${hhmm}`);
+  const nowParts = Object.fromEntries(SYD.formatToParts(new Date()).map((x) => [x.type, x.value]));
+  const nowMin = +nowParts.hour * 60 + +nowParts.minute;
+  const targetMin = hh * 60 + mm;
+  if (nowMin >= targetMin) {
+    say(`已过悉尼 ${hhmm}（现在 ${nowParts.hour}:${nowParts.minute}），立刻开采`);
+    return;
+  }
+  // 按分钟差算，不构造带时区的 Date —— 夏令时边界上自己算时差是这个仓踩过的坑。
+  const waitMs = (targetMin - nowMin) * 60_000 - (+nowParts.second) * 1000;
+  say(`等到悉尼 ${hhmm} 再开采：sleep ${Math.round(waitMs / 60000)} 分钟`);
+  await sleep(waitMs);
+  say(`到点，开采`);
+}
+if (WAIT_UNTIL) await waitUntilSydney(WAIT_UNTIL);
 
 say(`采集启动：${WINDOWS} 个窗口 × ${PERIOD_MS} ms，feed ${FEEDS.map((f) => f[0]).join(', ')}`);
 for (let w = 0; w < WINDOWS; w++) {
