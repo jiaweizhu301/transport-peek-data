@@ -35,7 +35,7 @@ CONFIG_SCHEMA_VERSION = 1
 # 不传就沿用下面这个值（= M3 的口径，只够让 M3 的包收到 UNSUPPORTED_SCHEMA 而不是一个
 # 更清楚的「请升级」提示 —— 功能上安全，提示上不够好）。
 # 这条挂在 checklist 4.15 的关账清单上。
-MIN_SUPPORTED_APP_VERSION = 1
+MIN_SUPPORTED_APP_VERSION = 2026092501
 
 PAGES_BASE_DEFAULT = 'https://jiaweizhu301.github.io/transport-peek-data'
 
