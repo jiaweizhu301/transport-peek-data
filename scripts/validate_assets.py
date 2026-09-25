@@ -22,6 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SCHEMAS = os.path.join(os.path.dirname(HERE), 'schemas')
 sys.path.insert(0, HERE)
 import build_db  # noqa: E402  非营运词表的唯一真相
+from gtfs_modes import self_parent  # noqa: E402  与 Worker MODE_TOPOLOGY 同一个标记
 
 
 def sha256(p):
@@ -93,15 +94,40 @@ def main():
                 'SELECT stop_id FROM stops WHERE location_type = 1')}
             expect = db.execute(
                 'SELECT count(*) FROM stops WHERE parent_station IS NOT NULL').fetchone()[0]
+            if not self_parent(mode):
+                # 自己就是停靠点的父站各有一行自映射（gen_manifest.stop_parents 的 docstring）
+                expect += db.execute(
+                    'SELECT count(*) FROM stops p WHERE p.location_type = 1 AND EXISTS'
+                    ' (SELECT 1 FROM pattern_stops ps WHERE ps.stop_id = p.stop_id)').fetchone()[0]
             if len(sp['stops']) != expect:
-                fails.append('%s: stop_parents 条数 %d != 库里子站数 %d'
+                fails.append('%s: stop_parents 条数 %d != 应有 %d（子站 + 非 self_parent 的停车父站）'
                              % (mode, len(sp['stops']), expect))
+            # 覆盖：每个有车停的站，Worker 都要映射得上 —— 在 stop_parents 里，或 mode 是 self_parent。
+            # 这是「实时全丢」那一类缺陷在资产层的判据（公交一次、轻轨 L1 一次）。
+            if not self_parent(mode):
+                mapped = {x['stop_id'] for x in sp['stops']}
+                unmapped = sorted(r[0] for r in db.execute('SELECT DISTINCT stop_id FROM pattern_stops')
+                                  if r[0] not in mapped)
+                if unmapped:
+                    fails.append('%s: 有车停、却不在 stop_parents 里的站 %d 个（Worker 会丢掉它们的实时）：%s'
+                                 % (mode, len(unmapped), ', '.join(unmapped[:5])))
             bad = [s for s in sp['stops']
                    if s['stop_id'] not in known or s['parent_stop_id'] not in parents]
             if bad:
                 fails.append('%s: stop_parents 有 %d 条指向库里不存在的站' % (mode, len(bad)))
-            if not any(s['platform_code'] for s in sp['stops']):
-                fails.append('%s: stop_parents 全部 platform_code 为 null' % mode)
+            # 自成父站的 mode（公交）没有子站，stop_parents 按定义就是 0 条、也没有站台号。
+            # 豁免条件读 gtfs_modes.self_parent —— 与 Worker 的 MODE_TOPOLOGY 同一个标记。
+            # 反过来也要核：标记与库里的真实形状必须一致，否则 Worker 会按错的规则映射。
+            if self_parent(mode):
+                if sp['stops']:
+                    fails.append('%s: 标记为 self_parent，但 stop_parents 有 %d 条子站'
+                                 % (mode, len(sp['stops'])))
+            else:
+                if not sp['stops']:
+                    fails.append('%s: 没有标记 self_parent，但 stop_parents 是 0 条 —— '
+                                 'Worker 会把这个 mode 的实时全部丢掉' % mode)
+                elif not any(s['platform_code'] for s in sp['stops']):
+                    fails.append('%s: stop_parents 全部 platform_code 为 null' % mode)
         db.close()
         print('OK   %s: gz %.2f MB / sha256 / meta / stop_parents 全部对账一致'
               % (mode, feed['size_bytes'] / 1e6))

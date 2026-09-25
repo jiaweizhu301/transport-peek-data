@@ -22,6 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 GOLDEN = os.path.join(os.path.dirname(HERE), 'golden')
 sys.path.insert(0, HERE)
 import build_db
+import tripoffsets    # noqa: E402  —— trips.offsets 的唯一 Python 编解码实现
 from gtfs_modes import days_for
 
 MODES = ['sydneytrains', 'metro']
@@ -30,7 +31,9 @@ PINNED_VERSION = '20260907-0000'
 # 日历窗口不再钉死成一个数：直接吃 gtfs_modes 里每模式的缺省值（sydneytrains=16 / metro=120），
 # 这样「谁改了某个模式的缺省窗口」也会被黄金样本抓住，而不是只抓建库逻辑。
 
-TABLES = ['meta', 'stops', 'routes', 'direction_groups', 'trips', 'stop_times',
+# schema 2：stop_times 是视图（而且没有时刻列），换成它底下的两张真表。
+# trips 的哈希里包含 offsets blob，所以时刻的任何变化都会在这里体现。
+TABLES = ['meta', 'stops', 'routes', 'direction_groups', 'trips', 'pattern_stops',
           'stop_patterns', 'calendar', 'calendar_dates', 'transfers']
 # meta.generated_at 是生成时间，必然变；比对时剔除
 META_COLS = 'id, schema_version, mode, static_version, calendar_start, calendar_end'
@@ -39,6 +42,8 @@ META_COLS = 'id, schema_version, mode, static_version, calendar_start, calendar_
 def snapshot(db_path):
     db = sqlite3.connect('file:%s?immutable=1' % db_path.replace('\\', '/'), uri=True)
     out = {'tables': {}}
+    blob_cache = {}
+    seq_cache = {}
     for t in TABLES:
         cols = META_COLS if t == 'meta' else '*'
         rows = db.execute('SELECT %s FROM %s' % (cols, t)).fetchall()
@@ -49,11 +54,28 @@ def snapshot(db_path):
         out['tables'][t] = {'rows': len(rows), 'sha256': h.hexdigest()}
     out['platform_code_rows'] = db.execute(
         'SELECT count(*) FROM stops WHERE platform_code IS NOT NULL').fetchone()[0]
-    out['sample_departures'] = db.execute(
-        'SELECT s.trip_id, s.stop_id, s.departure_secs, t.headsign, g.direction_key '
-        'FROM stop_times s JOIN trips t USING(trip_id) '
-        'JOIN direction_groups g ON g.id = t.direction_group_id '
-        'ORDER BY s.stop_id, s.departure_secs, s.trip_id LIMIT 5').fetchall()
+    # schema 2：departure 要解 blob 才有。取样按 (stop_id, departure, trip_id) 排序，
+    # 口径与 schema 1 那版一致，这样黄金样本里这几行的语义没变、只是算法变了。
+    sample = []
+    for tid, sid, seq, pid, start, blob, nst, hs, dk in db.execute(
+            'SELECT t.trip_id, ps.stop_id, ps.stop_sequence, t.pattern_id, t.start_secs, '
+            '       t.offsets, sp.n_stops, t.headsign, g.direction_key '
+            'FROM pattern_stops ps JOIN trips t ON t.pattern_id = ps.pattern_id '
+            'JOIN stop_patterns sp ON sp.pattern_id = t.pattern_id '
+            'JOIN direction_groups g ON g.id = t.direction_group_id'):
+        seqs = seq_cache.get(pid)
+        if seqs is None:
+            seqs = [r[0] for r in db.execute(
+                'SELECT stop_sequence FROM pattern_stops WHERE pattern_id = ? '
+                'ORDER BY stop_sequence', (pid,))]
+            seq_cache[pid] = seqs
+        times = blob_cache.get(tid)
+        if times is None:
+            times = tripoffsets.decode(start, blob, n_stops=nst)
+            blob_cache[tid] = times
+        sample.append((tid, sid, times[seqs.index(seq)][1], hs, dk))
+    sample.sort(key=lambda r: (r[1], r[2], r[0]))
+    out['sample_departures'] = sample[:5]
     out['sample_platform'] = db.execute(
         'SELECT stop_id, name, platform_code FROM stops '
         'WHERE platform_code IS NOT NULL ORDER BY stop_id LIMIT 5').fetchall()

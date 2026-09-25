@@ -32,9 +32,31 @@ import sys
 import zipfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gtfs_modes import MODES, PUBLISH_MODES, parse_days_spec
+from gtfs_modes import drop_route_types_for, feeds_for, MODES, PUBLISH_MODES, parse_days_spec, self_parent
 
 SCHEMA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'schema.sql')
+
+# 同一个物理站的几个独立站台（没有 parent_station），在非 self_parent 的 mode 里并成**一个**父站。
+# 判据 = name_normalized 相同 + 两两（单链）距离 ≤ 本阈值。阈值是 2026-09-23 在轻轨上实测定的：
+#   同名独立站对的距离 2.9 – 66.6 m（21 对，innerwest 同站两个方向的站台）；
+#   不同名独立站之间最近 272 m。取 150 m：同名最大值的 2.25 倍、不同名最小值的 0.55 倍。
+# 火车 / metro 的父站本来就有上游给的 parent_station，不走这条；公交是 self_parent，也不走
+# （公交同名对街站是真的不同站，靠 TSN 区分，不能并）。
+PARENT_MERGE_METERS = 150.0
+
+
+def haversine_m(lat1, lon1, lat2, lon2):
+    import math
+    r = 6371000.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    a = (math.sin((p2 - p1) / 2) ** 2
+         + math.cos(p1) * math.cos(p2) * math.sin(math.radians(lon2 - lon1) / 2) ** 2)
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+def stop_id_order(sid):
+    """父站 ID 的稳定选择顺序：先按长度、再按字面（纯数字 ID 等价于按数值，混合 ID 也有确定顺序）。"""
+    return (len(sid), sid)
 
 # ---------------------------------------------------------------------------
 # 非营运（空车调车 / 不载客）班次的 headsign 清单。**按 headsign 过滤，不按 route 或 agency。**
@@ -109,6 +131,9 @@ NON_REVENUE_HEADSIGNS = frozenset([
 # 拿不到 tzdata 时**不许**退回 UTC（退回 UTC 就是把 bug 又装回来），改用悉尼 DST 的
 # 明文规则：AEDT(UTC+11) 从 10 月第一个周日 02:00 到 4 月第一个周日 03:00，其余 AEST(UTC+10)。
 SYDNEY_TZ_NAME = 'Australia/Sydney'
+
+
+import tripoffsets    # noqa: E402  —— trips.offsets 的唯一 Python 编解码实现
 
 
 def _first_sunday(year, month):
@@ -351,16 +376,49 @@ def ymd(s):
 
 
 class Feed(object):
-    """按需读 zip 里的某个 txt；不存在返回空迭代（上游 sydneytrains 无 transfers/calendar_dates）。"""
+    """按需读**一个或多个** zip 里的某个 txt，按给定顺序依次产出。
 
-    def __init__(self, path):
-        self.z = zipfile.ZipFile(path)
-        self.names = set(self.z.namelist())
+    多 zip 是 lightrail 逼出来的：一个客户端 mode 由两个上游 feed 合成
+    （innerwest + cbdandsoutheast，见 gtfs_modes 模块头）。不存在的 txt 返回空迭代
+    （上游 sydneytrains 无 transfers/calendar_dates）。
+    """
+
+    def __init__(self, paths):
+        if isinstance(paths, str):
+            paths = [paths]
+        self.zs = [zipfile.ZipFile(p) for p in paths]
+        self.names = [set(z.namelist()) for z in self.zs]
 
     def rows(self, name):
-        if name not in self.names:
-            return iter(())
-        return csv.DictReader(io.TextIOWrapper(self.z.open(name), encoding='utf-8-sig'))
+        for z, names in zip(self.zs, self.names):
+            if name not in names:
+                continue
+            for r in csv.DictReader(io.TextIOWrapper(z.open(name), encoding='utf-8-sig')):
+                yield r
+
+    def check_no_id_collisions(self):
+        """多 feed 合并前检查 id 空间不重叠，**冲突就失败退出**。
+
+        2026-09-22 实测两个 lightrail 子 feed 的 routes/stops/trips/calendar/agency
+        五个 id 空间零交集，所以可以直接拼接、不用重编 id。但**零交集是今天的事实，
+        不是 TfNSW 的承诺** —— 静默的后写覆盖前写会让一条线路凭空消失，
+        与「聚合端点其实是别名」是同一类失败形态，必须响亮。
+        """
+        if len(self.zs) < 2:
+            return
+        for fname, col in (('routes.txt', 'route_id'), ('stops.txt', 'stop_id'),
+                           ('trips.txt', 'trip_id'), ('calendar.txt', 'service_id')):
+            seen = {}
+            for i, (z, names) in enumerate(zip(self.zs, self.names)):
+                if fname not in names:
+                    continue
+                for r in csv.DictReader(io.TextIOWrapper(z.open(fname), encoding='utf-8-sig')):
+                    v = r[col]
+                    if v in seen and seen[v] != i:
+                        raise SystemExit(
+                            'FATAL: 子 feed %d 与 %d 的 %s 撞了 id %r —— 必须显式加前缀，'
+                            '不许静默覆盖' % (seen[v], i, fname, v))
+                    seen[v] = i
 
 
 def service_days(cal_rows, cd_rows, day):
@@ -380,13 +438,21 @@ def service_days(cal_rows, cd_rows, day):
 def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
     cfg = MODES[mode]
     keep_agencies = set(cfg['keep_agencies']) if cfg['keep_agencies'] else None
+    drop_types = drop_route_types_for(mode)
     f = Feed(zip_path)
+    f.check_no_id_collisions()
 
-    # ---- routes（agency 过滤）
+    # ---- routes（agency 过滤 + route_type 剔除）
     routes = []
     keep_routes = set()
+    dropped_by_route_type = {}
     for r in f.rows('routes.txt'):
         if keep_agencies and r.get('agency_id') not in keep_agencies:
+            continue
+        rt = int(r['route_type'])
+        if rt in drop_types:
+            # 校车 712 与混进 buses feed 的渡轮 4，理由见 gtfs_modes.MODES['buses']
+            dropped_by_route_type[rt] = dropped_by_route_type.get(rt, 0) + 1
             continue
         keep_routes.add(r['route_id'])
         routes.append((r['route_id'], r.get('agency_id') or '', r.get('route_short_name') or '',
@@ -446,8 +512,10 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
             dg_id[k] = len(dgs) + 1
             dgs.append((dg_id[k], t['route_id'], direction_key_of(hs), hs, hs))
         di = t.get('direction_id')
+        # 末三位 pattern_id / start_secs / duration_secs / offsets 由 flush() 填
         trips[t['trip_id']] = [t['trip_id'], t['route_id'], t['service_id'], hs,
-                               int(di) if di not in (None, '') else None, dg_id[k], None]
+                               int(di) if di not in (None, '') else None, dg_id[k],
+                               None, None, None, None]
 
     # ---- stops（丢出入口/通用节点；解析 platform_code）
     stops = {}
@@ -461,6 +529,20 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
                                (s.get('parent_station') or '').strip() or None,
                                platform_of(name, (s.get('platform_code') or '').strip() or None))
 
+    # ---- 自成父站的模式（M4-4.3 实测逼出来的）
+    # 公交上游的 3.7 万个站 **location_type 全空（当 0）、parent_station 全空** ——
+    # 「父站 / 站台子站」这层抽象在公交上没有输入。照原样建库的后果不是「少个分组」，
+    # 是**搜索一条都搜不到**：`idx_stops_search` 与 `searchStops` 都带
+    # `WHERE location_type = 1`（契约：搜索只命中父站），而公交一个父站都没有。
+    # 这条是 golden 加了公交样本之后才暴露的 —— stop_search.buses.json 五个前缀全是 0 命中，
+    # 其中包括 'liverpool' 这种明摆着存在的站。**没有那份 golden，它会一路活到 4.7。**
+    #
+    # 处置：见下面 used_stops 之后的「按站提父站」。
+    # 原来这里是「一个 mode 若全网零 parent_station，就把它的站整体提成父站」——
+    # 轻轨一半有父站（cbdandsoutheast）、一半没有（innerwest 的 44 站），整体规则没触发，
+    # 那 44 站 location_type=0 又没有父站：搜不到、也进不了 stop_parents，实时全丢
+    # （2026-09-23 查出）。所以改成**按站**判断，而且要等知道哪些站真有车停之后再判。
+
     # ---- 建库（索引留到灌完数据再建）
     db_tmp = out_path + '.tmp'
     if os.path.exists(db_tmp):
@@ -472,10 +554,13 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
     db.execute('PRAGMA synchronous = OFF')
     db.execute('PRAGMA journal_mode = MEMORY')
 
-    # ---- stop_times（流式；只留保留下来的 trip；同时抽停站序列做 pattern 归一化）
+    # ---- stop_times（流式）→ schema 2 的两层：几何进 stop_patterns/pattern_stops，时刻进 trips.offsets
+    # 为什么拆两层：把时刻偏移并进 pattern 键（单层）在公交上只有 2.32× 行数压缩、单模式 80 MB；
+    # 几何单独去重是 9.25×。实测两层后 buses 217.5 → 35.7 MB、火车 50.6 → 7.2 MB。
     pattern_id = {}
-    patterns = []
-    ins = 'INSERT OR IGNORE INTO stop_times VALUES (?,?,?,?,?,?,?)'
+    patterns = []          # (pattern_id, route_id, n_stops)
+    pattern_stops = []     # (pattern_id, stop_sequence, stop_id, pickup_type, drop_off_type)
+    used_stop_ids = set()  # schema 2 没有 stop_times 表可以 SELECT DISTINCT，只能在这里攒
 
     dropped_nonrevenue = [0]
 
@@ -487,15 +572,30 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
             dropped_nonrevenue[0] += 1
             return
         rows.sort(key=lambda r: r[1])
-        db.executemany(ins, rows)
         route_id = trips[tid][1]
-        key = (route_id, tuple(r[2] for r in rows))
+        # 几何键：停站序列 + 上下客标志，**不含时刻**
+        key = (route_id, tuple((r[1], r[2], r[5], r[6]) for r in rows))
         pid = pattern_id.get(key)
         if pid is None:
             pid = len(patterns) + 1
             pattern_id[key] = pid
-            patterns.append((pid, route_id, json.dumps(list(key[1]), separators=(',', ':'))))
+            patterns.append((pid, route_id, len(rows)))
+            for (seq, sid, pu, do) in key[1]:
+                pattern_stops.append((pid, seq, sid, pu, do))
+        for r in rows:
+            used_stop_ids.add(r[2])
+        start = rows[0][4]                       # 首站 departure
+        times = [(r[3], r[4]) for r in rows]     # (arrival, departure)
+        blob = tripoffsets.encode(start, times)
+        # 不变量：编出来的 blob 必须能解回原样、站数必须与 pattern 对得上。
+        # 不在这里断言的话，失败形态是「时刻悄悄偏了几秒」，线上没有任何报错。
+        back = tripoffsets.decode(start, blob, n_stops=len(rows))
+        if back != times:
+            raise AssertionError('trip %s 的 offsets 解回来与原值不符' % tid)
         trips[tid][6] = pid
+        trips[tid][7] = start
+        trips[tid][8] = times[-1][1] - start
+        trips[tid][9] = blob
 
     cur_tid, buf = None, []
     orphan_stop = 0
@@ -528,7 +628,46 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
     for tid in [t for t, v in trips.items() if v[6] is None]:
         del trips[tid]
 
-    used_stops = {r[0] for r in db.execute('SELECT DISTINCT stop_id FROM stop_times')}
+    used_stops = set(used_stop_ids)
+    # ---- 按站提父站：有车停、location_type=0、又没有父站的站。
+    # 站本身既是可停靠点也是可收藏点。不改客户端：`childStopIds` 的
+    # `parent_station = ? OR stop_id = ?` 本来就会返回它自己和它的子站。
+    # 只看**有车停**的站：没车停的孤站不进库，提不提都一样，而提它们会让火车 / metro 的库平白变动。
+    orphans = sorted((sid for sid in used_stops
+                      if sid in stops and stops[sid][5] == 0 and not stops[sid][6]), key=stop_id_order)
+    if self_parent(mode):
+        # 公交：每个站就是自己的父站（1:1）。结果与原来的「整体提升」逐字相同。
+        for sid in orphans:
+            v = stops[sid]
+            stops[sid] = (v[0], v[1], v[2], v[3], v[4], 1, v[6], v[7])
+    else:
+        # 非 self_parent（轻轨 innerwest）：同一个物理站的两个方向站台原来各提成一个父站 ——
+        # 搜索出两行一模一样的结果，点错一行只看得到一个方向（m4/int 重建 0ec8ba1 后发现 21 组）。
+        # 按「name_normalized 相同 + 单链距离 ≤ PARENT_MERGE_METERS」分组；每组 ID 最小的那个站
+        # （stop_id_order）提成父站，其余站台挂到它下面当子站。同一输入永远得到同一个父站 ID，
+        # 而且用的是真实 stop_id，不造合成 ID（收藏里存的就是它）。
+        by_name = {}
+        for sid in orphans:
+            by_name.setdefault(stops[sid][2], []).append(sid)
+        for group in by_name.values():
+            clusters = []
+            for sid in group:                                   # 已按 stop_id_order 排好，结果稳定
+                v = stops[sid]
+                hit = [c for c in clusters if any(
+                    haversine_m(v[3], v[4], stops[o][3], stops[o][4]) <= PARENT_MERGE_METERS for o in c)]
+                merged = [sid]
+                for c in hit:
+                    merged += c
+                    clusters.remove(c)
+                clusters.append(merged)
+            for c in clusters:
+                c.sort(key=stop_id_order)
+                parent = c[0]
+                v = stops[parent]
+                stops[parent] = (v[0], v[1], v[2], v[3], v[4], 1, v[6], v[7])
+                for child in c[1:]:
+                    w = stops[child]
+                    stops[child] = (w[0], w[1], w[2], w[3], w[4], 0, parent, w[7])
     keep_stops = set(used_stops)
     for sid in list(used_stops):
         p = stops[sid][6] if sid in stops else None
@@ -552,7 +691,9 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
                    [g for g in dgs if g[0] in live_dg])
     db.executemany('INSERT INTO stop_patterns VALUES (?,?,?)',
                    [p for p in patterns if p[0] in live_pat])
-    db.executemany('INSERT INTO trips VALUES (?,?,?,?,?,?,?)', list(trips.values()))
+    db.executemany('INSERT INTO pattern_stops VALUES (?,?,?,?,?)',
+                   [p for p in pattern_stops if p[0] in live_pat])
+    db.executemany('INSERT INTO trips VALUES (?,?,?,?,?,?,?,?,?,?)', list(trips.values()))
     db.executemany('INSERT INTO calendar VALUES (?,?,?,?,?,?,?,?,?,?)',
                    [c for c in calendar if c[0] in live_services])
     db.executemany('INSERT INTO calendar_dates VALUES (?,?,?)',
@@ -566,21 +707,23 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
                    [r for r in tf if r[0] in keep_stops and r[1] in keep_stops])
 
     db.execute('INSERT INTO meta VALUES (1,?,?,?,?,?,?)', (
-        1, mode, static_version, cal_lo, cal_hi,
+        2, mode, static_version, cal_lo, cal_hi,
         datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
         .isoformat().replace('+00:00', 'Z')))
     for stmt in index_stmts:
         db.execute(stmt)
     db.commit()
     db.execute('PRAGMA journal_mode = DELETE')
-    db.execute('PRAGMA user_version = 1')
+    db.execute('PRAGMA user_version = 2')
     db.commit()
     db.execute('VACUUM')
     db.commit()
 
     counts = {t: db.execute('SELECT count(*) FROM ' + t).fetchone()[0]
-              for t in ('stops', 'routes', 'direction_groups', 'trips', 'stop_times',
+              for t in ('stops', 'routes', 'direction_groups', 'trips', 'pattern_stops',
                         'stop_patterns', 'calendar', 'calendar_dates', 'transfers')}
+    # stop_times 现在是视图，count(*) 要跑整个 join。它的行数 = Σ(每趟的站数)，从 pattern 直接算。
+    counts['stop_times'] = sum(patterns[t[6] - 1][2] for t in trips.values())
     plat = db.execute('SELECT count(*) FROM stops WHERE platform_code IS NOT NULL').fetchone()[0]
     db.close()
     if os.path.exists(out_path):
@@ -624,7 +767,14 @@ def main():
         vf = os.path.join(a.gtfs_dir, mode + '.version')
         sv = open(vf, encoding='utf-8').read().strip() if os.path.exists(vf) else \
             datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d-%H%M')
-        st = build(os.path.join(a.gtfs_dir, mode + '.zip'), mode, sv,
+        # 多 feed 的 mode 落成 <mode>.0.zip / <mode>.1.zip（见 fetch_gtfs.fetch）
+        n = len(feeds_for(mode))
+        zips = ([os.path.join(a.gtfs_dir, '%s.%d.zip' % (mode, i)) for i in range(n)]
+                if n > 1 else [os.path.join(a.gtfs_dir, mode + '.zip')])
+        missing = [z for z in zips if not os.path.exists(z)]
+        if missing:
+            raise SystemExit('FATAL: 缺 %s 的上游 zip：%s' % (mode, missing))
+        st = build(zips, mode, sv,
                    os.path.join(a.out_dir, mode + '.sqlite'), days_by_mode[mode],
                    datetime.datetime.strptime(a.today, '%Y%m%d').date() if a.today else None)
         if not a.no_gzip:

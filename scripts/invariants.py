@@ -7,7 +7,7 @@
 不变量（M1-D4 原文四条 + 契约 2 的硬约束）：
   1. 行数区间：每模式每表的行数落在预设区间内（上游突然缩水/暴涨都拦下来）
   2. calendar 覆盖 >= 14 天，且窗口必须从「今天」起算（挡上游 feed 停更）
-  3. 无孤儿 stop_times（stop_id / trip_id 悬空）
+  3. 无孤儿停站（pattern_stops.stop_id / trips.pattern_id 悬空）
   4. 每父站 >= 1 子站
   5. schema 硬约束：user_version=1 / journal_mode=delete / page_size=4096 /
      integrity_check=ok / foreign_key_check 零违规 / meta 单行且 mode 与文件名一致
@@ -24,6 +24,9 @@ import sqlite3
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tripoffsets    # noqa: E402  —— trips.offsets 的唯一 Python 编解码实现
+from build_db import PARENT_MERGE_METERS, haversine_m  # noqa: E402  并组判据的唯一真相
+from gtfs_modes import self_parent  # noqa: E402
 from build_db import (NON_REVENUE_HEADSIGNS, is_non_revenue_headsign,  # noqa: E402  唯一真相来源
                       service_today)
 
@@ -33,16 +36,36 @@ MIN_CALENDAR_DAYS = 14
 RANGES = {
     'sydneytrains': {
         'stops': (400, 2000), 'routes': (30, 200), 'direction_groups': (60, 600),
-        'trips': (15000, 90000), 'stop_times': (200000, 1600000),
+        'trips': (15000, 90000), 'pattern_stops': (5000, 200000),
         'stop_patterns': (300, 8000), 'calendar': (20, 400),
     },
     'metro': {
         'stops': (40, 200), 'routes': (1, 10), 'direction_groups': (2, 40),
-        'trips': (800, 8000), 'stop_times': (15000, 200000),
+        'trips': (800, 8000), 'pattern_stops': (20, 5000),
         'stop_patterns': (2, 200), 'calendar': (2, 60),
     },
+    # M4-4.3 基线（2026-09-22 实测，剔除校车 712 与混入的渡轮 4 之后）：
+    # routes 821（700 普通巴士 793 + 714 铁路接驳 28）、stops 32,169、trips 84,076、
+    # stop_patterns 5,251、pattern_stops 约 22.7 万。上下各留约 ±40%。
+    'buses': {
+        'stops': (20000, 60000), 'routes': (400, 2000), 'direction_groups': (500, 8000),
+        'trips': (50000, 150000), 'pattern_stops': (100000, 500000),
+        'stop_patterns': (2000, 15000), 'calendar': (100, 800),
+    },
+    # ⚠ lightrail 的 routes 下界是**刻意**卡在 4 的（L1/L2/L3/LX）。
+    # 它守的不是「数据质量」，是「**两个子 feed 都进来了**」：
+    # /v1/gtfs/schedule/lightrail 这个「聚合」端点其实是 innerwest 的别名，只有 L1。
+    # 照它建库会得到一个 200、内容合法、其余不变量全过、golden 也不红的**缺三条线**的库。
+    # 这条下界是目前唯一能让那种错变红的东西 —— 别为了「宽松一点」把它调低。
+    'lightrail': {
+        'stops': (60, 400), 'routes': (4, 20), 'direction_groups': (4, 100),
+        'trips': (3000, 20000), 'pattern_stops': (100, 3000),
+        'stop_patterns': (10, 300), 'calendar': (5, 100),
+    },
 }
-MIN_PLATFORM_CODE = {'sydneytrains': 400, 'metro': 30}
+# 有站台号的行数下界。**公交没有站台号**（上游 stops.txt 的 platform_code 全空，
+# 3.2 万站一个都没有），所以它不在这张表里 —— 不是忘了写，是那个概念在公交上不存在。
+MIN_PLATFORM_CODE = {'sydneytrains': 400, 'metro': 30, 'lightrail': 50}
 
 
 def days_between(lo, hi):
@@ -57,8 +80,8 @@ def check(db_path, mode):
     q1 = lambda s: db.execute(s).fetchone()[0]
 
     # 5. schema 硬约束
-    if q1('PRAGMA user_version') != 1:
-        fails.append('user_version != 1')
+    if q1('PRAGMA user_version') != 2:
+        fails.append('user_version != 2')
     if q1('PRAGMA journal_mode') != 'delete':
         fails.append('journal_mode != delete')
     if q1('PRAGMA page_size') != 4096:
@@ -77,7 +100,7 @@ def check(db_path, mode):
     sv, mmode, static_version, cal_lo, cal_hi = meta[0]
     if mmode != mode:
         fails.append('meta.mode=%s 与文件名 %s 不一致' % (mmode, mode))
-    if sv != 1:
+    if sv != 2:
         fails.append('meta.schema_version=%s' % sv)
     if not static_version:
         fails.append('meta.static_version 为空')
@@ -105,29 +128,73 @@ def check(db_path, mode):
         if not lo <= n <= hi:
             fails.append('%s 行数 %d 越界 [%d, %d]' % (t, n, lo, hi))
 
-    # 3. 无孤儿 stop_times
-    n = q1('SELECT count(*) FROM stop_times s LEFT JOIN stops x USING(stop_id) '
+    # 3. 无孤儿停站。schema 2 起 stop_times 是视图，走 pattern_stops / trips 两张真表查，
+    #    否则每条都要跑一遍整表 join。
+    n = q1('SELECT count(*) FROM pattern_stops ps LEFT JOIN stops x USING(stop_id) '
            'WHERE x.stop_id IS NULL')
     if n:
-        fails.append('孤儿 stop_times（stop_id 悬空）%d 行' % n)
-    n = q1('SELECT count(*) FROM stop_times s LEFT JOIN trips t USING(trip_id) '
-           'WHERE t.trip_id IS NULL')
+        fails.append('孤儿 pattern_stops（stop_id 悬空）%d 行' % n)
+    n = q1('SELECT count(*) FROM pattern_stops ps LEFT JOIN stop_patterns p USING(pattern_id) '
+           'WHERE p.pattern_id IS NULL')
     if n:
-        fails.append('孤儿 stop_times（trip_id 悬空）%d 行' % n)
-    n = q1('SELECT count(*) FROM trips t LEFT JOIN stop_times s USING(trip_id) '
-           'WHERE s.trip_id IS NULL')
+        fails.append('孤儿 pattern_stops（pattern_id 悬空）%d 行' % n)
+    n = q1('SELECT count(*) FROM stop_patterns p LEFT JOIN pattern_stops ps USING(pattern_id) '
+           'WHERE ps.pattern_id IS NULL')
     if n:
-        fails.append('无停站的 trips %d 条' % n)
+        fails.append('没有停站的 stop_patterns %d 条' % n)
 
-    # 4. 每父站 >= 1 子站
-    n = q1('SELECT count(*) FROM stops p WHERE p.location_type = 1 AND NOT EXISTS '
-           '(SELECT 1 FROM stops c WHERE c.parent_station = p.stop_id)')
+    # 4. 每父站要么有子站，**要么它自己就是可停靠的站**
+    #    后半句是公交逼出来的：公交零 parent_station，管线把站整体提成父站（1:1 退化），
+    #    那些父站没有子站，但它们自己出现在 pattern_stops 里。
+    #    不要把这条直接放宽成「允许没有子站的父站」—— 那样火车真的丢了子站也不会红。
+    n = q1('SELECT count(*) FROM stops p WHERE p.location_type = 1'
+           ' AND NOT EXISTS (SELECT 1 FROM stops c WHERE c.parent_station = p.stop_id)'
+           ' AND NOT EXISTS (SELECT 1 FROM pattern_stops ps WHERE ps.stop_id = p.stop_id)')
     if n:
-        fails.append('没有子站的父站 %d 个' % n)
+        fails.append('既没有子站、自己也不被任何 pattern 停靠的父站 %d 个' % n)
     n = q1('SELECT count(*) FROM stops c WHERE c.parent_station IS NOT NULL AND NOT EXISTS '
            '(SELECT 1 FROM stops p WHERE p.stop_id = c.parent_station)')
     if n:
         fails.append('父站缺失的子站 %d 个' % n)
+
+    # 4b. **每个有车停的站，都必须能被搜到 / 收藏**（M4 · 2026-09-23 轻轨 L1 逼出来的）
+    #     = 它自己是父站（location_type = 1），或者它的父站是父站。
+    #     两次同形的缺陷都会被这一条抓住：公交全网零父站（4.3 当天）、轻轨 L1 的 44 个站
+    #     location_type=0 又没有父站（管线只在「整个 mode 零 parent_station」时才提父站，
+    #     轻轨一半有父站 → 没触发 → 这 44 站既搜不到、也进不了 stop_parents、实时全丢）。
+    #     失败信息列出具体站，因为挂了的时候人在排查**数据**。
+    bad = db.execute(
+        'SELECT DISTINCT s.stop_id, s.name FROM pattern_stops ps JOIN stops s ON s.stop_id = ps.stop_id'
+        # ⚠ 不能写成 NOT (lt = 1 OR parent_station IN (…))：parent_station 为 NULL 时 IN 得 NULL，
+        # NOT (假 OR NULL) 仍是 NULL，WHERE 把它当假 —— 正好把要抓的那一类全部漏掉。
+        # 第一版就是这么写的，在修复前的轻轨库上**恒过**（2026-09-23 实测），所以显式判空。
+        ' WHERE s.location_type <> 1 AND (s.parent_station IS NULL'
+        ' OR s.parent_station NOT IN (SELECT stop_id FROM stops WHERE location_type = 1))'
+        ' ORDER BY s.stop_id').fetchall()
+    if bad:
+        fails.append('有车停、却既不是父站也没有父站（搜不到、实时映射不上）的站 %d 个：%s'
+                     % (len(bad), ', '.join('%s %s' % r for r in bad[:5])))
+
+    # 4c. **同一个物理站只许有一个父站**（非 self_parent 的 mode；M4 · 2026-09-23 轻轨逼出来的）
+    #     按站提父站的第一版把 innerwest 同一站的两个方向站台各提成一个父站：搜「Dulwich Grove」
+    #     出两行一模一样的结果，点错一行只看得到一个方向（21 组，相距 3–67 m）。
+    #     判据与 build_db 并组用的是同一个：name_normalized 相同 + 距离 ≤ PARENT_MERGE_METERS。
+    #     公交不查：同名对街站是真的不同站，靠 TSN 区分。
+    if not self_parent(mode):
+        ps = db.execute('SELECT stop_id, name, name_normalized, lat, lon FROM stops WHERE location_type = 1').fetchall()
+        by = {}
+        for r in ps:
+            by.setdefault(r[2], []).append(r)
+        dup = []
+        for group in by.values():
+            for i in range(len(group)):
+                for j in range(i + 1, len(group)):
+                    a, b = group[i], group[j]
+                    if haversine_m(a[3], a[4], b[3], b[4]) <= PARENT_MERGE_METERS:
+                        dup.append('%s %s / %s' % (a[1], a[0], b[0]))
+        if dup:
+            fails.append('同名且相距 ≤ %d m 的父站 %d 组（同一个物理站被拆成多个父站）：%s'
+                         % (PARENT_MERGE_METERS, len(dup), '; '.join(dup[:5])))
 
     # 6. platform_code 下限
     n = q1('SELECT count(*) FROM stops WHERE platform_code IS NOT NULL')
@@ -159,6 +226,37 @@ def check(db_path, mode):
                     if is_non_revenue_headsign(hs))
     if bad_trips:
         fails.append('trips.headsign 含非营运标记 %d 条（共 %d 条 trip）' % (bad_trips, ntrip))
+
+    # 9. schema 2：每趟的 offsets 必须解得开、站数对得上 pattern、末站 departure 对得上
+    #    duration_secs，且同一趟内时刻单调不减。这一条是本次 schema 变更的核心防线 ——
+    #    编解码不一致的失败形态是「时刻悄悄偏了几秒」，没有任何报错，只能靠这里逐趟验。
+    bad_blob = []
+    nonmono = []
+    for tid, pid, start, dur, blob, nst in db.execute(
+            'SELECT t.trip_id, t.pattern_id, t.start_secs, t.duration_secs, t.offsets, p.n_stops '
+            'FROM trips t JOIN stop_patterns p USING(pattern_id)'):
+        try:
+            times = tripoffsets.decode(start, blob, n_stops=nst)
+        except ValueError as e:
+            if len(bad_blob) < 5:
+                bad_blob.append((tid, str(e)))
+            continue
+        if times[-1][1] - start != dur:
+            if len(bad_blob) < 5:
+                bad_blob.append((tid, 'duration_secs=%d 但末站 departure−start=%d'
+                                 % (dur, times[-1][1] - start)))
+            continue
+        prev = start
+        for arr, dep in times:
+            if dep < prev:
+                if len(nonmono) < 5:
+                    nonmono.append(tid)
+                break
+            prev = dep
+    if bad_blob:
+        fails.append('trips.offsets 解码失败 %d 例（只列前几条）：%s' % (len(bad_blob), bad_blob))
+    if nonmono:
+        fails.append('trips.offsets 时刻非单调 %d 例（只列前几条）：%s' % (len(nonmono), nonmono))
 
     db.close()
     return fails
