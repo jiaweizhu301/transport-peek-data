@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://transportpeek.example/contracts/manifest.schema.json",
   "title": "TransportPeek data-repo Release manifest.json",
-  "description": "契约 4a · GitHub Release 资产 manifest.json。客户端只认 releases/latest/download/manifest.json。依据 PROJECT_REQUIREMENTS v1.1 §3.1（需求原文字段名 minSupportedVersion 在此统一为 snake_case min_supported_app_version）。冻结日期 2026-09-06，改动需主 agent 批准。config.json 的 schema 见同目录 config.schema.json。",
+  "description": "契约 4a · GitHub Release 资产 manifest.json。客户端只认 releases/latest/download/manifest.json。依据 PROJECT_REQUIREMENTS v1.1 §3.1（需求原文字段名 minSupportedVersion 在此统一为 snake_case min_supported_app_version）。冻结日期 2026-09-06，改动需主 agent 批准。config.json 的 schema 见同目录 config.schema.json。2026-09-24 M6 加性扩展 `shapes`（owner 批准）。",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "generated_at", "min_supported_app_version", "feeds", "config_url", "privacy_policy_url", "attribution_url", "stop_parents_url_template"],
@@ -21,7 +21,13 @@
     "privacy_policy_url": { "type": "string", "format": "uri", "description": "GitHub Pages 隐私政策页" },
     "attribution_url": { "type": "string", "format": "uri", "description": "GitHub Pages TfNSW CC-BY 4.0 归属页" },
     "stop_parents_url_template": { "type": "string", "description": "必填。Worker 用的子站→父站映射资产 URL 模板，含 {mode} 占位，如 …/download/stop_parents.{mode}.json" },
-    "channel": { "type": "string", "enum": ["stable", "prerelease"], "default": "stable", "description": "发布通道。schema_version 变更先以 GitHub prerelease 发布（channel=prerelease，不更新 latest）；客户端「检查更新」只跟 stable；M4 转正后再发 stable" }
+    "channel": { "type": "string", "enum": ["stable", "prerelease"], "default": "stable", "description": "发布通道。schema_version 变更先以 GitHub prerelease 发布（channel=prerelease，不更新 latest）；客户端「检查更新」只跟 stable；M4 转正后再发 stable" },
+    "shapes": {
+      "type": "object",
+      "description": "M6 §6.1：每模式一个 shapes 文件（线路真实走向，按需下载）。新顶层键，不放进 feeds：老 app 把 feeds 的每个键当 mode。可缺省（没有任何 shapes 时不写）。",
+      "propertyNames": { "enum": ["sydneytrains", "metro", "buses", "lightrail", "ferries", "nswtrains"] },
+      "additionalProperties": { "$ref": "#/definitions/shapes" }
+    }
   },
   "definitions": {
     "feed": {
@@ -37,6 +43,20 @@
         "calendar_start": { "type": "integer", "minimum": 20200101, "description": "YYYYMMDD" },
         "calendar_end": { "type": "integer", "minimum": 20200101, "description": "YYYYMMDD；客户端超过此日显示「时刻表待更新」" },
         "compression": { "type": "string", "enum": ["gzip"], "description": "冻结为 gzip（Android 原生 GZIPInputStream，零依赖；需求 v1.2 §3.1 已对齐）。改 zstd 需扩 enum 并递增 schema_version" }
+      }
+    },
+    "shapes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "sha256", "size_bytes", "bin_bytes", "format", "static_version", "compression"],
+      "properties": {
+        "url": { "type": "string", "format": "uri", "description": "releases/download/<tag>/shapes.<mode>.bin.gz" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$", "description": "压缩文件的 SHA-256" },
+        "size_bytes": { "type": "integer", "minimum": 1, "description": "压缩后字节数（下载进度分母）" },
+        "bin_bytes": { "type": "integer", "minimum": 5, "description": "解压后字节数（装机体积账）" },
+        "format": { "type": "integer", "const": 1, "description": "shapes.<mode>.bin 字节契约版本，见 pipeline/scripts/shapes.py" },
+        "static_version": { "type": "string", "pattern": "^[0-9]{8}(-[0-9]{4})?$", "description": "与同 mode 的 feeds[mode].static_version 同值" },
+        "compression": { "type": "string", "enum": ["gzip"] }
       }
     }
   }

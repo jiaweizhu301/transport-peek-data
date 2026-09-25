@@ -16,6 +16,7 @@
   8. direction_groups 里不许出现非营运 headsign（'Empty Train' 等，见 build_db.NON_REVENUE_HEADSIGNS）。
      2026-09-07 真机在 Central 看到「开往 Empty Train」才发现管线漏了这一刀；加这条不变量是为了
      上游哪天冒出新的非营运词时管线**报警**，而不是又静默显示给用户。
+  9. 公交区表（M6 §6.3）：两表行数区间、父站归属率 ≥ 99%、无孤儿行（FK 已由第 5 条的 foreign_key_check 覆盖）
 """
 import datetime as _dt
 import json
@@ -66,6 +67,11 @@ RANGES = {
 # 有站台号的行数下界。**公交没有站台号**（上游 stops.txt 的 platform_code 全空，
 # 3.2 万站一个都没有），所以它不在这张表里 —— 不是忘了写，是那个概念在公交上不存在。
 MIN_PLATFORM_CODE = {'sydneytrains': 400, 'metro': 30, 'lightrail': 50}
+
+# M6 §6.3 公交区表（只在 buses）。基线 2026-09-25 试跑：1,142 区（有站的）/ 32,180 行 / 归属 99.99%。
+# 区数上限卡在派生文件的 1,610（bbox 内 NSW 区总数）附近；行数与 stops 同量级。
+SUBURB_RANGES = {'suburbs': (700, 1700), 'stop_suburbs': (20000, 60000)}
+MIN_SUBURB_COVERAGE = 0.99
 
 
 def days_between(lo, hi):
@@ -127,6 +133,34 @@ def check(db_path, mode):
         n = q1('SELECT count(*) FROM ' + t)
         if not lo <= n <= hi:
             fails.append('%s 行数 %d 越界 [%d, %d]' % (t, n, lo, hi))
+
+    # 9. M6 §6.3 公交区表（F5）。buses 必须有：区表步骤没跑 = 不发版
+    if mode == 'buses':
+        have = {r[0] for r in db.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('suburbs', 'stop_suburbs')")}
+        if have != {'suburbs', 'stop_suburbs'}:
+            fails.append('buses 缺区表 %s（suburbs.py 没跑？）' % sorted({'suburbs', 'stop_suburbs'} - have))
+        else:
+            for t, (lo, hi) in SUBURB_RANGES.items():
+                n = q1('SELECT count(*) FROM ' + t)
+                if not lo <= n <= hi:
+                    fails.append('%s 行数 %d 越界 [%d, %d]' % (t, n, lo, hi))
+            parents = q1('SELECT count(*) FROM stops WHERE location_type = 1')
+            got = q1('SELECT count(DISTINCT stop_id) FROM stop_suburbs')
+            if parents and got < MIN_SUBURB_COVERAGE * parents:
+                fails.append('公交父站归属率 %.2f%% < %.0f%%（%d / %d）'
+                             % (got * 100.0 / parents, MIN_SUBURB_COVERAGE * 100, got, parents))
+            n = q1('SELECT count(*) FROM suburbs s WHERE NOT EXISTS '
+                   '(SELECT 1 FROM stop_suburbs x WHERE x.suburb_id = s.suburb_id)')
+            if n:
+                fails.append('没有站的区 %d 个（区表只收 ≥ 1 站的区）' % n)
+            n = q1('SELECT count(*) FROM stop_suburbs x JOIN stops s ON s.stop_id = x.stop_id '
+                   'WHERE s.location_type != 1')
+            if n:
+                fails.append('stop_suburbs 指向非父站 %d 行' % n)
+            n = q1('SELECT count(*) FROM (SELECT stop_id FROM stop_suburbs GROUP BY stop_id HAVING count(*) > 1)')
+            if n:
+                fails.append('一个站归了多个区 %d 个' % n)
 
     # 3. 无孤儿停站。schema 2 起 stop_times 是视图，走 pattern_stops / trips 两张真表查，
     #    否则每条都要跑一遍整表 join。

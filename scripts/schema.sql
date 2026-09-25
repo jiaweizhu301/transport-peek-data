@@ -60,7 +60,7 @@ CREATE TABLE trips (
   route_id            TEXT NOT NULL REFERENCES routes(route_id),
   service_id          TEXT NOT NULL,
   headsign            TEXT,                        -- 原始 trip_headsign（终点显示用）
-  direction_id        INTEGER,                     -- 原样保留，仅供调试，不用于业务
+  direction_id        INTEGER,                     -- 原样保留；F4 公交线路按它分方向（M6）
   direction_group_id  INTEGER NOT NULL REFERENCES direction_groups(id),
   pattern_id          INTEGER NOT NULL REFERENCES stop_patterns(pattern_id),
   start_secs          INTEGER NOT NULL,            -- 首站 departure 的运营日秒数（本趟所有时刻的基准）

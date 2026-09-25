@@ -84,7 +84,7 @@ upload "${BUILD_DIR}/config.json"
 upload "${BUILD_DIR}/non_revenue_headsigns.json"
 # 解析规则（PLATFORM_RE 等）：同上，客户端 Regex(读到的字符串) 直接用
 upload "${BUILD_DIR}/parsing_rules.json"
-for f in "${BUILD_DIR}"/*.sqlite.gz "${BUILD_DIR}"/stop_parents.*.json; do
+for f in "${BUILD_DIR}"/*.sqlite.gz "${BUILD_DIR}"/stop_parents.*.json "${BUILD_DIR}"/shapes.*.bin.gz; do
   [ -e "$f" ] && upload "$f"
 done
 if [ "$uploaded" -lt 6 ]; then

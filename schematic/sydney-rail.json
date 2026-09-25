@@ -1,0 +1,4347 @@
+{
+ "format": 1,
+ "network": "sydney-rail",
+ "data_version": "2026-09-26",
+ "source": "TfNSW 官方网络图拓扑（手工布点）",
+ "bounds": [
+  0,
+  0,
+  1950,
+  2120
+ ],
+ "stations": [
+  {
+   "id": "allawah",
+   "parents": {
+    "sydneytrains": [
+     "222020"
+    ]
+   },
+   "label": {
+    "text": "Allawah",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1670
+  },
+  {
+   "id": "arlington",
+   "parents": {
+    "lightrail": [
+     "220366"
+    ]
+   },
+   "label": {
+    "text": "Arlington",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1030,
+   "y": 640
+  },
+  {
+   "id": "arncliffe",
+   "parents": {
+    "sydneytrains": [
+     "220520"
+    ]
+   },
+   "label": {
+    "text": "Arncliffe",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1520
+  },
+  {
+   "id": "artarmon",
+   "parents": {
+    "sydneytrains": [
+     "206410"
+    ]
+   },
+   "x": 1370,
+   "y": 540,
+   "label": {
+    "text": "Artarmon",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "ashfield",
+   "parents": {
+    "sydneytrains": [
+     "213110"
+    ]
+   },
+   "label": {
+    "text": "Ashfield",
+    "anchor": "w",
+    "dx": -18,
+    "dy": 0
+   },
+   "x": 930,
+   "y": 1160,
+   "interchange": true
+  },
+  {
+   "id": "asquith",
+   "parents": {
+    "sydneytrains": [
+     "207730"
+    ]
+   },
+   "label": {
+    "text": "Asquith",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 150
+  },
+  {
+   "id": "auburn",
+   "parents": {
+    "sydneytrains": [
+     "214410"
+    ]
+   },
+   "label": {
+    "text": "Auburn",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 720,
+   "y": 950
+  },
+  {
+   "id": "bank_street",
+   "parents": {
+    "lightrail": [
+     "200937"
+    ]
+   },
+   "label": {
+    "text": "Bank Street",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 1150,
+   "y": 940
+  },
+  {
+   "id": "banksia",
+   "parents": {
+    "sydneytrains": [
+     "221610"
+    ]
+   },
+   "label": {
+    "text": "Banksia",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1550
+  },
+  {
+   "id": "bankstown",
+   "parents": {
+    "sydneytrains": [
+     "220010"
+    ]
+   },
+   "label": {
+    "text": "Bankstown",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 690,
+   "y": 1160
+  },
+  {
+   "id": "barangaroo",
+   "parents": {
+    "metro": [
+     "200046"
+    ]
+   },
+   "x": 1510,
+   "y": 870,
+   "label": {
+    "text": "Barangaroo",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   }
+  },
+  {
+   "id": "bardwell_park",
+   "parents": {
+    "sydneytrains": [
+     "220710"
+    ]
+   },
+   "label": {
+    "text": "Bardwell Park",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 1160,
+   "y": 1480
+  },
+  {
+   "id": "beecroft",
+   "parents": {
+    "sydneytrains": [
+     "211910"
+    ]
+   },
+   "label": {
+    "text": "Beecroft",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 300
+  },
+  {
+   "id": "bella_vista",
+   "parents": {
+    "metro": [
+     "2153478"
+    ]
+   },
+   "label": {
+    "text": "Bella Vista",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 690,
+   "y": 210
+  },
+  {
+   "id": "berala",
+   "parents": {
+    "sydneytrains": [
+     "214120"
+    ]
+   },
+   "label": {
+    "text": "Berala",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 720,
+   "y": 1010,
+   "interchange": true
+  },
+  {
+   "id": "berowra",
+   "parents": {
+    "sydneytrains": [
+     "208110"
+    ]
+   },
+   "label": {
+    "text": "Berowra",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 60
+  },
+  {
+   "id": "beverly_hills",
+   "parents": {
+    "sydneytrains": [
+     "220910"
+    ]
+   },
+   "label": {
+    "text": "Beverly Hills",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 970,
+   "y": 1480
+  },
+  {
+   "id": "bexley_north",
+   "parents": {
+    "sydneytrains": [
+     "220720"
+    ]
+   },
+   "label": {
+    "text": "Bexley North",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 1100,
+   "y": 1480
+  },
+  {
+   "id": "birrong",
+   "parents": {
+    "sydneytrains": [
+     "214320"
+    ]
+   },
+   "label": {
+    "text": "Birrong",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 690,
+   "y": 1080
+  },
+  {
+   "id": "blacktown",
+   "parents": {
+    "sydneytrains": [
+     "214810"
+    ]
+   },
+   "label": {
+    "text": "Blacktown",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 420,
+   "y": 650,
+   "interchange": true
+  },
+  {
+   "id": "bondi_junction",
+   "parents": {
+    "sydneytrains": [
+     "202210"
+    ]
+   },
+   "label": {
+    "text": "Bondi Junction",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 1810,
+   "y": 980
+  },
+  {
+   "id": "bridge_street",
+   "parents": {
+    "lightrail": [
+     "2000177"
+    ]
+   },
+   "x": 1410,
+   "y": 900,
+   "label": {
+    "text": "Bridge Street",
+    "anchor": "se",
+    "dx": 6,
+    "dy": 8
+   },
+   "interchange": true
+  },
+  {
+   "id": "burwood",
+   "parents": {
+    "sydneytrains": [
+     "213410"
+    ]
+   },
+   "label": {
+    "text": "Burwood",
+    "anchor": "w",
+    "dx": -18,
+    "dy": 0
+   },
+   "x": 870,
+   "y": 1100,
+   "interchange": true
+  },
+  {
+   "id": "cabramatta",
+   "parents": {
+    "sydneytrains": [
+     "216620"
+    ]
+   },
+   "label": {
+    "text": "Cabramatta",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 450,
+   "y": 1280,
+   "interchange": true
+  },
+  {
+   "id": "campbelltown",
+   "parents": {
+    "sydneytrains": [
+     "256020"
+    ]
+   },
+   "label": {
+    "text": "Campbelltown",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 450,
+   "y": 1680,
+   "interchange": true
+  },
+  {
+   "id": "canley_vale",
+   "parents": {
+    "sydneytrains": [
+     "216610"
+    ]
+   },
+   "label": {
+    "text": "Canley Vale",
+    "anchor": "e",
+    "dx": 14,
+    "dy": 0
+   },
+   "x": 450,
+   "y": 1040,
+   "interchange": true
+  },
+  {
+   "id": "capitol_square",
+   "parents": {
+    "lightrail": [
+     "2000255"
+    ]
+   },
+   "label": {
+    "text": "Capitol Square",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1270,
+   "y": 1090
+  },
+  {
+   "id": "caringbah",
+   "parents": {
+    "sydneytrains": [
+     "222910"
+    ]
+   },
+   "label": {
+    "text": "Caringbah",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1410,
+   "y": 2000
+  },
+  {
+   "id": "carlton",
+   "parents": {
+    "sydneytrains": [
+     "221810"
+    ]
+   },
+   "label": {
+    "text": "Carlton",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1640
+  },
+  {
+   "id": "carramar",
+   "parents": {
+    "sydneytrains": [
+     "216330"
+    ]
+   },
+   "label": {
+    "text": "Carramar",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 490,
+   "y": 1240
+  },
+  {
+   "id": "castle_hill",
+   "parents": {
+    "metro": [
+     "2154391"
+    ]
+   },
+   "label": {
+    "text": "Castle Hill",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 780,
+   "y": 300
+  },
+  {
+   "id": "casula",
+   "parents": {
+    "sydneytrains": [
+     "217030"
+    ]
+   },
+   "label": {
+    "text": "Casula",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 450,
+   "y": 1430,
+   "interchange": true
+  },
+  {
+   "id": "central",
+   "parents": {
+    "sydneytrains": [
+     "200060"
+    ],
+    "metro": [
+     "200060"
+    ],
+    "lightrail": [
+     "200060"
+    ]
+   },
+   "x": 1370,
+   "y": 1140,
+   "label": {
+    "text": "Central",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "central_grand_concourse",
+   "parents": {
+    "lightrail": [
+     "2000257"
+    ]
+   },
+   "label": {
+    "text": "Central Grand Concourse",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1270,
+   "y": 1120
+  },
+  {
+   "id": "chatswood",
+   "parents": {
+    "sydneytrains": [
+     "206710"
+    ],
+    "metro": [
+     "206710"
+    ]
+   },
+   "x": 1370,
+   "y": 480,
+   "label": {
+    "text": "Chatswood",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "cheltenham",
+   "parents": {
+    "sydneytrains": [
+     "211920"
+    ]
+   },
+   "label": {
+    "text": "Cheltenham",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 330
+  },
+  {
+   "id": "cherrybrook",
+   "parents": {
+    "metro": [
+     "2126158"
+    ]
+   },
+   "label": {
+    "text": "Cherrybrook",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 810,
+   "y": 330
+  },
+  {
+   "id": "chester_hill",
+   "parents": {
+    "sydneytrains": [
+     "216220"
+    ]
+   },
+   "label": {
+    "text": "Chester Hill",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 610,
+   "y": 1120
+  },
+  {
+   "id": "chinatown",
+   "parents": {
+    "lightrail": [
+     "2000169"
+    ]
+   },
+   "x": 1370,
+   "y": 1060,
+   "label": {
+    "text": "Chinatown",
+    "anchor": "w",
+    "dx": -24,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "circular_quay",
+   "parents": {
+    "lightrail": [
+     "200020"
+    ],
+    "sydneytrains": [
+     "200020"
+    ]
+   },
+   "x": 1470,
+   "y": 840,
+   "label": {
+    "text": "Circular Quay",
+    "anchor": "w",
+    "dx": -18,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "clarendon",
+   "parents": {
+    "sydneytrains": [
+     "275630"
+    ]
+   },
+   "label": {
+    "text": "Clarendon",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 180,
+   "y": 410,
+   "interchange": true
+  },
+  {
+   "id": "clyde",
+   "parents": {
+    "sydneytrains": [
+     "214230"
+    ]
+   },
+   "label": {
+    "text": "Clyde",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 690,
+   "y": 920
+  },
+  {
+   "id": "como",
+   "parents": {
+    "sydneytrains": [
+     "222610"
+    ]
+   },
+   "label": {
+    "text": "Como",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1820
+  },
+  {
+   "id": "concord_west",
+   "parents": {
+    "sydneytrains": [
+     "213810"
+    ]
+   },
+   "label": {
+    "text": "Concord West",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 810
+  },
+  {
+   "id": "convention_centre",
+   "parents": {
+    "lightrail": [
+     "2000262"
+    ]
+   },
+   "label": {
+    "text": "Convention Centre",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1270,
+   "y": 1000
+  },
+  {
+   "id": "cronulla",
+   "parents": {
+    "sydneytrains": [
+     "223020"
+    ]
+   },
+   "label": {
+    "text": "Cronulla",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1470,
+   "y": 2060
+  },
+  {
+   "id": "crows_nest",
+   "parents": {
+    "metro": [
+     "206516"
+    ]
+   },
+   "x": 1510,
+   "y": 640,
+   "label": {
+    "text": "Crows Nest",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   }
+  },
+  {
+   "id": "croydon",
+   "parents": {
+    "sydneytrains": [
+     "213210"
+    ]
+   },
+   "label": {
+    "text": "Croydon",
+    "anchor": "w",
+    "dx": -18,
+    "dy": 0
+   },
+   "x": 900,
+   "y": 1130,
+   "interchange": true
+  },
+  {
+   "id": "denistone",
+   "parents": {
+    "sydneytrains": [
+     "211410"
+    ]
+   },
+   "label": {
+    "text": "Denistone",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 510
+  },
+  {
+   "id": "domestic_airport",
+   "parents": {
+    "sydneytrains": [
+     "202020"
+    ]
+   },
+   "label": {
+    "text": "Domestic Airport",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1430,
+   "y": 1420
+  },
+  {
+   "id": "doonside",
+   "parents": {
+    "sydneytrains": [
+     "276710"
+    ]
+   },
+   "label": {
+    "text": "Doonside",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 390,
+   "y": 680,
+   "interchange": true
+  },
+  {
+   "id": "dulwich_grove",
+   "parents": {
+    "lightrail": [
+     "220364"
+    ]
+   },
+   "label": {
+    "text": "Dulwich Grove",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1030,
+   "y": 610
+  },
+  {
+   "id": "dulwich_hill",
+   "parents": {
+    "lightrail": [
+     "220363"
+    ]
+   },
+   "label": {
+    "text": "Dulwich Hill",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1030,
+   "y": 580
+  },
+  {
+   "id": "east_hills",
+   "parents": {
+    "sydneytrains": [
+     "221320"
+    ]
+   },
+   "label": {
+    "text": "East Hills",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 590,
+   "y": 1480
+  },
+  {
+   "id": "east_richmond",
+   "parents": {
+    "sydneytrains": [
+     "275310"
+    ]
+   },
+   "label": {
+    "text": "East Richmond",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 150,
+   "y": 380,
+   "interchange": true
+  },
+  {
+   "id": "eastwood",
+   "parents": {
+    "sydneytrains": [
+     "212210"
+    ]
+   },
+   "label": {
+    "text": "Eastwood",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 430
+  },
+  {
+   "id": "edgecliff",
+   "parents": {
+    "sydneytrains": [
+     "202710"
+    ]
+   },
+   "label": {
+    "text": "Edgecliff",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 1740,
+   "y": 980
+  },
+  {
+   "id": "edmondson_park",
+   "parents": {
+    "sydneytrains": [
+     "217426"
+    ]
+   },
+   "label": {
+    "text": "Edmondson Park",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 380,
+   "y": 1480,
+   "interchange": true
+  },
+  {
+   "id": "emu_plains",
+   "parents": {
+    "sydneytrains": [
+     "275020"
+    ]
+   },
+   "label": {
+    "text": "Emu Plains",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 180,
+   "y": 890,
+   "interchange": true
+  },
+  {
+   "id": "engadine",
+   "parents": {
+    "sydneytrains": [
+     "223310"
+    ]
+   },
+   "label": {
+    "text": "Engadine",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1940
+  },
+  {
+   "id": "epping",
+   "parents": {
+    "metro": [
+     "212110"
+    ],
+    "sydneytrains": [
+     "212110"
+    ]
+   },
+   "label": {
+    "text": "Epping",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 360,
+   "interchange": true
+  },
+  {
+   "id": "erskineville",
+   "parents": {
+    "sydneytrains": [
+     "204310"
+    ]
+   },
+   "label": {
+    "text": "Erskineville",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1270,
+   "interchange": true
+  },
+  {
+   "id": "es_marks",
+   "parents": {
+    "lightrail": [
+     "203362"
+    ]
+   },
+   "label": {
+    "text": "ES Marks",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1560,
+   "y": 1330
+  },
+  {
+   "id": "exhibition_centre",
+   "parents": {
+    "lightrail": [
+     "2000264"
+    ]
+   },
+   "label": {
+    "text": "Exhibition Centre",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1270,
+   "y": 1030
+  },
+  {
+   "id": "fairfield",
+   "parents": {
+    "sydneytrains": [
+     "216510"
+    ]
+   },
+   "label": {
+    "text": "Fairfield",
+    "anchor": "e",
+    "dx": 14,
+    "dy": 0
+   },
+   "x": 480,
+   "y": 1010,
+   "interchange": true
+  },
+  {
+   "id": "flemington",
+   "parents": {
+    "sydneytrains": [
+     "214020"
+    ]
+   },
+   "label": {
+    "text": "Flemington",
+    "anchor": "e",
+    "dx": 18,
+    "dy": 0
+   },
+   "x": 780,
+   "y": 1010,
+   "interchange": true
+  },
+  {
+   "id": "gadigal",
+   "parents": {
+    "metro": [
+     "200066"
+    ]
+   },
+   "x": 1450,
+   "y": 1060,
+   "label": {
+    "text": "Gadigal",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   }
+  },
+  {
+   "id": "glebe",
+   "parents": {
+    "lightrail": [
+     "203781"
+    ]
+   },
+   "label": {
+    "text": "Glebe",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1030,
+   "y": 940
+  },
+  {
+   "id": "glenfield",
+   "parents": {
+    "sydneytrains": [
+     "216710"
+    ]
+   },
+   "label": {
+    "text": "Glenfield",
+    "anchor": "sw",
+    "dx": -8,
+    "dy": 12
+   },
+   "x": 450,
+   "y": 1480,
+   "interchange": true
+  },
+  {
+   "id": "gordon",
+   "parents": {
+    "sydneytrains": [
+     "207210"
+    ]
+   },
+   "label": {
+    "text": "Gordon",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 360,
+   "interchange": true
+  },
+  {
+   "id": "granville",
+   "parents": {
+    "sydneytrains": [
+     "214240"
+    ]
+   },
+   "label": {
+    "text": "Granville",
+    "anchor": "e",
+    "dx": 14,
+    "dy": 0
+   },
+   "x": 660,
+   "y": 890,
+   "interchange": true
+  },
+  {
+   "id": "green_square",
+   "parents": {
+    "sydneytrains": [
+     "201710"
+    ]
+   },
+   "label": {
+    "text": "Green Square",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1430,
+   "y": 1340
+  },
+  {
+   "id": "guildford",
+   "parents": {
+    "sydneytrains": [
+     "216110"
+    ]
+   },
+   "label": {
+    "text": "Guildford",
+    "anchor": "e",
+    "dx": 14,
+    "dy": 0
+   },
+   "x": 560,
+   "y": 930,
+   "interchange": true
+  },
+  {
+   "id": "gymea",
+   "parents": {
+    "sydneytrains": [
+     "222710"
+    ]
+   },
+   "label": {
+    "text": "Gymea",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1350,
+   "y": 1940
+  },
+  {
+   "id": "harris_park",
+   "parents": {
+    "sydneytrains": [
+     "215010"
+    ]
+   },
+   "label": {
+    "text": "Harris Park",
+    "anchor": "w",
+    "dx": -18,
+    "dy": 0
+   },
+   "x": 630,
+   "y": 860,
+   "interchange": true
+  },
+  {
+   "id": "hawthorne",
+   "parents": {
+    "lightrail": [
+     "2040111"
+    ]
+   },
+   "label": {
+    "text": "Hawthorne",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1030,
+   "y": 790
+  },
+  {
+   "id": "haymarket",
+   "parents": {
+    "lightrail": [
+     "2000168"
+    ]
+   },
+   "x": 1370,
+   "y": 1100,
+   "label": {
+    "text": "Haymarket",
+    "anchor": "w",
+    "dx": -24,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "heathcote",
+   "parents": {
+    "sydneytrains": [
+     "223320"
+    ]
+   },
+   "label": {
+    "text": "Heathcote",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1970
+  },
+  {
+   "id": "hills_showground",
+   "parents": {
+    "metro": [
+     "2154392"
+    ]
+   },
+   "label": {
+    "text": "Hills Showground",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 750,
+   "y": 270
+  },
+  {
+   "id": "holsworthy",
+   "parents": {
+    "sydneytrains": [
+     "217310"
+    ]
+   },
+   "label": {
+    "text": "Holsworthy",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 520,
+   "y": 1480
+  },
+  {
+   "id": "homebush",
+   "parents": {
+    "sydneytrains": [
+     "214010"
+    ]
+   },
+   "label": {
+    "text": "Homebush",
+    "anchor": "w",
+    "dx": -18,
+    "dy": 0
+   },
+   "x": 810,
+   "y": 1040,
+   "interchange": true
+  },
+  {
+   "id": "hornsby",
+   "parents": {
+    "sydneytrains": [
+     "207720"
+    ]
+   },
+   "label": {
+    "text": "Hornsby",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 180,
+   "interchange": true
+  },
+  {
+   "id": "hurstville",
+   "parents": {
+    "sydneytrains": [
+     "222010"
+    ]
+   },
+   "label": {
+    "text": "Hurstville",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1700
+  },
+  {
+   "id": "ingleburn",
+   "parents": {
+    "sydneytrains": [
+     "256510"
+    ]
+   },
+   "label": {
+    "text": "Ingleburn",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 450,
+   "y": 1560,
+   "interchange": true
+  },
+  {
+   "id": "international_airport",
+   "parents": {
+    "sydneytrains": [
+     "202030"
+    ]
+   },
+   "label": {
+    "text": "International Airport",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1430,
+   "y": 1460
+  },
+  {
+   "id": "jannali",
+   "parents": {
+    "sydneytrains": [
+     "222620"
+    ]
+   },
+   "label": {
+    "text": "Jannali",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1850
+  },
+  {
+   "id": "john_street_square",
+   "parents": {
+    "lightrail": [
+     "200939"
+    ]
+   },
+   "label": {
+    "text": "John Street Square",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 1210,
+   "y": 940
+  },
+  {
+   "id": "jubilee_park",
+   "parents": {
+    "lightrail": [
+     "203779"
+    ]
+   },
+   "label": {
+    "text": "Jubilee Park",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1030,
+   "y": 910
+  },
+  {
+   "id": "juniors_kingsford",
+   "parents": {
+    "lightrail": [
+     "203294"
+    ]
+   },
+   "label": {
+    "text": "Juniors Kingsford",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1680,
+   "y": 1450
+  },
+  {
+   "id": "kellyville",
+   "parents": {
+    "metro": [
+     "2155382"
+    ]
+   },
+   "label": {
+    "text": "Kellyville",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 660,
+   "y": 180
+  },
+  {
+   "id": "kensington",
+   "parents": {
+    "lightrail": [
+     "203361"
+    ]
+   },
+   "label": {
+    "text": "Kensington",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1590,
+   "y": 1360
+  },
+  {
+   "id": "killara",
+   "parents": {
+    "sydneytrains": [
+     "207110"
+    ]
+   },
+   "label": {
+    "text": "Killara",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 390,
+   "interchange": true
+  },
+  {
+   "id": "kings_cross",
+   "parents": {
+    "sydneytrains": [
+     "201110"
+    ]
+   },
+   "label": {
+    "text": "Kings Cross",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 1670,
+   "y": 980
+  },
+  {
+   "id": "kingsford",
+   "parents": {
+    "lightrail": [
+     "203295"
+    ]
+   },
+   "label": {
+    "text": "Kingsford",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1650,
+   "y": 1420
+  },
+  {
+   "id": "kingsgrove",
+   "parents": {
+    "sydneytrains": [
+     "220810"
+    ]
+   },
+   "label": {
+    "text": "Kingsgrove",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 1030,
+   "y": 1480
+  },
+  {
+   "id": "kingswood",
+   "parents": {
+    "sydneytrains": [
+     "274720"
+    ]
+   },
+   "label": {
+    "text": "Kingswood",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 240,
+   "y": 830,
+   "interchange": true
+  },
+  {
+   "id": "kirrawee",
+   "parents": {
+    "sydneytrains": [
+     "223230"
+    ]
+   },
+   "label": {
+    "text": "Kirrawee",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1320,
+   "y": 1910
+  },
+  {
+   "id": "kogarah",
+   "parents": {
+    "sydneytrains": [
+     "221710"
+    ]
+   },
+   "label": {
+    "text": "Kogarah",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1610
+  },
+  {
+   "id": "leichhardt_north",
+   "parents": {
+    "lightrail": [
+     "2040113"
+    ]
+   },
+   "label": {
+    "text": "Leichhardt North",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1030,
+   "y": 820
+  },
+  {
+   "id": "leightonfield",
+   "parents": {
+    "sydneytrains": [
+     "216310"
+    ]
+   },
+   "label": {
+    "text": "Leightonfield",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 570,
+   "y": 1160
+  },
+  {
+   "id": "leppington",
+   "parents": {
+    "sydneytrains": [
+     "217933"
+    ]
+   },
+   "label": {
+    "text": "Leppington",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 310,
+   "y": 1480,
+   "interchange": true
+  },
+  {
+   "id": "leumeah",
+   "parents": {
+    "sydneytrains": [
+     "256010"
+    ]
+   },
+   "label": {
+    "text": "Leumeah",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 450,
+   "y": 1640,
+   "interchange": true
+  },
+  {
+   "id": "lewisham",
+   "parents": {
+    "sydneytrains": [
+     "204920"
+    ]
+   },
+   "label": {
+    "text": "Lewisham",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 990,
+   "y": 1220,
+   "interchange": true
+  },
+  {
+   "id": "lewisham_west",
+   "parents": {
+    "lightrail": [
+     "204993"
+    ]
+   },
+   "label": {
+    "text": "Lewisham West",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1030,
+   "y": 700
+  },
+  {
+   "id": "lidcombe",
+   "parents": {
+    "sydneytrains": [
+     "214110"
+    ]
+   },
+   "label": {
+    "text": "Lidcombe",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 750,
+   "y": 980,
+   "interchange": true
+  },
+  {
+   "id": "lilyfield",
+   "parents": {
+    "lightrail": [
+     "2040101"
+    ]
+   },
+   "label": {
+    "text": "Lilyfield",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1030,
+   "y": 850
+  },
+  {
+   "id": "lindfield",
+   "parents": {
+    "sydneytrains": [
+     "207010"
+    ]
+   },
+   "label": {
+    "text": "Lindfield",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 420,
+   "interchange": true
+  },
+  {
+   "id": "liverpool",
+   "parents": {
+    "sydneytrains": [
+     "217020"
+    ]
+   },
+   "label": {
+    "text": "Liverpool",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 450,
+   "y": 1380,
+   "interchange": true
+  },
+  {
+   "id": "loftus",
+   "parents": {
+    "sydneytrains": [
+     "223220"
+    ]
+   },
+   "label": {
+    "text": "Loftus",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1910
+  },
+  {
+   "id": "macarthur",
+   "parents": {
+    "sydneytrains": [
+     "256030"
+    ]
+   },
+   "label": {
+    "text": "Macarthur",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 450,
+   "y": 1720
+  },
+  {
+   "id": "macdonaldtown",
+   "parents": {
+    "sydneytrains": [
+     "201520"
+    ]
+   },
+   "label": {
+    "text": "Macdonaldtown",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 1230,
+   "y": 1220,
+   "interchange": true
+  },
+  {
+   "id": "macquarie_fields",
+   "parents": {
+    "sydneytrains": [
+     "256410"
+    ]
+   },
+   "label": {
+    "text": "Macquarie Fields",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 450,
+   "y": 1520,
+   "interchange": true
+  },
+  {
+   "id": "macquarie_park",
+   "parents": {
+    "metro": [
+     "211340"
+    ]
+   },
+   "label": {
+    "text": "Macquarie Park",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1310,
+   "y": 420
+  },
+  {
+   "id": "macquarie_university",
+   "parents": {
+    "metro": [
+     "211310"
+    ]
+   },
+   "label": {
+    "text": "Macquarie University",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1280,
+   "y": 390
+  },
+  {
+   "id": "marayong",
+   "parents": {
+    "sydneytrains": [
+     "214820"
+    ]
+   },
+   "label": {
+    "text": "Marayong",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 390,
+   "y": 620,
+   "interchange": true
+  },
+  {
+   "id": "marion",
+   "parents": {
+    "lightrail": [
+     "2040109"
+    ]
+   },
+   "label": {
+    "text": "Marion",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1030,
+   "y": 760
+  },
+  {
+   "id": "martin_place",
+   "parents": {
+    "metro": [
+     "200030"
+    ],
+    "sydneytrains": [
+     "200030"
+    ]
+   },
+   "x": 1510,
+   "y": 980,
+   "label": {
+    "text": "Martin Place",
+    "anchor": "nw",
+    "dx": -6,
+    "dy": -8
+   },
+   "interchange": true
+  },
+  {
+   "id": "mascot",
+   "parents": {
+    "sydneytrains": [
+     "202010"
+    ]
+   },
+   "label": {
+    "text": "Mascot",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1430,
+   "y": 1380
+  },
+  {
+   "id": "meadowbank",
+   "parents": {
+    "sydneytrains": [
+     "211430"
+    ]
+   },
+   "label": {
+    "text": "Meadowbank",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 670
+  },
+  {
+   "id": "merrylands",
+   "parents": {
+    "sydneytrains": [
+     "216010"
+    ]
+   },
+   "label": {
+    "text": "Merrylands",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 600,
+   "y": 890,
+   "interchange": true
+  },
+  {
+   "id": "milsons_point",
+   "parents": {
+    "sydneytrains": [
+     "206110"
+    ]
+   },
+   "x": 1370,
+   "y": 820,
+   "label": {
+    "text": "Milsons Point",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "minto",
+   "parents": {
+    "sydneytrains": [
+     "256610"
+    ]
+   },
+   "label": {
+    "text": "Minto",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 450,
+   "y": 1600,
+   "interchange": true
+  },
+  {
+   "id": "miranda",
+   "parents": {
+    "sydneytrains": [
+     "222810"
+    ]
+   },
+   "label": {
+    "text": "Miranda",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1380,
+   "y": 1970
+  },
+  {
+   "id": "moore_park",
+   "parents": {
+    "lightrail": [
+     "202195"
+    ]
+   },
+   "x": 1530,
+   "y": 1300,
+   "label": {
+    "text": "Moore Park",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "mortdale",
+   "parents": {
+    "sydneytrains": [
+     "222310"
+    ]
+   },
+   "label": {
+    "text": "Mortdale",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1760
+  },
+  {
+   "id": "mount_colah",
+   "parents": {
+    "sydneytrains": [
+     "207910"
+    ]
+   },
+   "label": {
+    "text": "Mount Colah",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 120
+  },
+  {
+   "id": "mount_druitt",
+   "parents": {
+    "sydneytrains": [
+     "277010"
+    ]
+   },
+   "label": {
+    "text": "Mount Druitt",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 330,
+   "y": 740,
+   "interchange": true
+  },
+  {
+   "id": "mount_kuring_gai",
+   "parents": {
+    "sydneytrains": [
+     "208010"
+    ]
+   },
+   "label": {
+    "text": "Mount Kuring-gai",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 90
+  },
+  {
+   "id": "mulgrave",
+   "parents": {
+    "sydneytrains": [
+     "275610"
+    ]
+   },
+   "label": {
+    "text": "Mulgrave",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 240,
+   "y": 470,
+   "interchange": true
+  },
+  {
+   "id": "museum",
+   "parents": {
+    "sydneytrains": [
+     "200040"
+    ]
+   },
+   "label": {
+    "text": "Museum",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1610,
+   "y": 1100,
+   "interchange": true
+  },
+  {
+   "id": "narwee",
+   "parents": {
+    "sydneytrains": [
+     "220920"
+    ]
+   },
+   "label": {
+    "text": "Narwee",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 910,
+   "y": 1480
+  },
+  {
+   "id": "newtown",
+   "parents": {
+    "sydneytrains": [
+     "204210"
+    ]
+   },
+   "label": {
+    "text": "Newtown",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -18
+   },
+   "x": 1170,
+   "y": 1220,
+   "interchange": true
+  },
+  {
+   "id": "normanhurst",
+   "parents": {
+    "sydneytrains": [
+     "207620"
+    ]
+   },
+   "label": {
+    "text": "Normanhurst",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 210
+  },
+  {
+   "id": "north_ryde",
+   "parents": {
+    "metro": [
+     "211320"
+    ]
+   },
+   "label": {
+    "text": "North Ryde",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1340,
+   "y": 450
+  },
+  {
+   "id": "north_strathfield",
+   "parents": {
+    "sydneytrains": [
+     "213710"
+    ]
+   },
+   "label": {
+    "text": "North Strathfield",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 870
+  },
+  {
+   "id": "north_sydney",
+   "parents": {
+    "sydneytrains": [
+     "206010"
+    ]
+   },
+   "x": 1370,
+   "y": 780,
+   "label": {
+    "text": "North Sydney",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "norwest",
+   "parents": {
+    "metro": [
+     "2153477"
+    ]
+   },
+   "label": {
+    "text": "Norwest",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 720,
+   "y": 240
+  },
+  {
+   "id": "oatley",
+   "parents": {
+    "sydneytrains": [
+     "222320"
+    ]
+   },
+   "label": {
+    "text": "Oatley",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1790
+  },
+  {
+   "id": "olympic_park",
+   "parents": {
+    "sydneytrains": [
+     "212710"
+    ]
+   },
+   "label": {
+    "text": "Olympic Park",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 750,
+   "y": 930
+  },
+  {
+   "id": "paddy_s_markets",
+   "parents": {
+    "lightrail": [
+     "2000253"
+    ]
+   },
+   "label": {
+    "text": "Paddy's Markets",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1270,
+   "y": 1060
+  },
+  {
+   "id": "padstow",
+   "parents": {
+    "sydneytrains": [
+     "221110"
+    ]
+   },
+   "label": {
+    "text": "Padstow",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 780,
+   "y": 1480
+  },
+  {
+   "id": "panania",
+   "parents": {
+    "sydneytrains": [
+     "221310"
+    ]
+   },
+   "label": {
+    "text": "Panania",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 650,
+   "y": 1480
+  },
+  {
+   "id": "parramatta",
+   "parents": {
+    "sydneytrains": [
+     "215020"
+    ]
+   },
+   "label": {
+    "text": "Parramatta",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 600,
+   "y": 830,
+   "interchange": true
+  },
+  {
+   "id": "pendle_hill",
+   "parents": {
+    "sydneytrains": [
+     "214530"
+    ]
+   },
+   "label": {
+    "text": "Pendle Hill",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 510,
+   "y": 740,
+   "interchange": true
+  },
+  {
+   "id": "pennant_hills",
+   "parents": {
+    "sydneytrains": [
+     "212020"
+    ]
+   },
+   "label": {
+    "text": "Pennant Hills",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 270
+  },
+  {
+   "id": "penrith",
+   "parents": {
+    "sydneytrains": [
+     "275010"
+    ]
+   },
+   "label": {
+    "text": "Penrith",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 210,
+   "y": 860,
+   "interchange": true
+  },
+  {
+   "id": "penshurst",
+   "parents": {
+    "sydneytrains": [
+     "222210"
+    ]
+   },
+   "label": {
+    "text": "Penshurst",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1730
+  },
+  {
+   "id": "petersham",
+   "parents": {
+    "sydneytrains": [
+     "204910"
+    ]
+   },
+   "label": {
+    "text": "Petersham",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -18
+   },
+   "x": 1050,
+   "y": 1220,
+   "interchange": true
+  },
+  {
+   "id": "pymble",
+   "parents": {
+    "sydneytrains": [
+     "207310"
+    ]
+   },
+   "label": {
+    "text": "Pymble",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 330
+  },
+  {
+   "id": "pyrmont_bay",
+   "parents": {
+    "lightrail": [
+     "200943"
+    ]
+   },
+   "label": {
+    "text": "Pyrmont Bay",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1270,
+   "y": 970
+  },
+  {
+   "id": "quakers_hill",
+   "parents": {
+    "sydneytrains": [
+     "276310"
+    ]
+   },
+   "label": {
+    "text": "Quakers Hill",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 360,
+   "y": 590,
+   "interchange": true
+  },
+  {
+   "id": "qvb",
+   "parents": {
+    "lightrail": [
+     "2000171"
+    ]
+   },
+   "x": 1370,
+   "y": 980,
+   "label": {
+    "text": "QVB",
+    "anchor": "w",
+    "dx": -24,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "randwick",
+   "parents": {
+    "lightrail": [
+     "2031167"
+    ]
+   },
+   "label": {
+    "text": "Randwick",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 1810,
+   "y": 1300
+  },
+  {
+   "id": "redfern",
+   "parents": {
+    "sydneytrains": [
+     "201510"
+    ]
+   },
+   "label": {
+    "text": "Redfern",
+    "anchor": "se",
+    "dx": 6,
+    "dy": 8
+   },
+   "x": 1290,
+   "y": 1220,
+   "interchange": true
+  },
+  {
+   "id": "regents_park",
+   "parents": {
+    "sydneytrains": [
+     "214310"
+    ]
+   },
+   "label": {
+    "text": "Regents Park",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 690,
+   "y": 1040,
+   "interchange": true
+  },
+  {
+   "id": "revesby",
+   "parents": {
+    "sydneytrains": [
+     "221210"
+    ]
+   },
+   "label": {
+    "text": "Revesby",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 710,
+   "y": 1480
+  },
+  {
+   "id": "rhodes",
+   "parents": {
+    "sydneytrains": [
+     "213820"
+    ]
+   },
+   "label": {
+    "text": "Rhodes",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 750
+  },
+  {
+   "id": "richmond",
+   "parents": {
+    "sydneytrains": [
+     "275320"
+    ]
+   },
+   "label": {
+    "text": "Richmond",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 120,
+   "y": 350,
+   "interchange": true
+  },
+  {
+   "id": "riverstone",
+   "parents": {
+    "sydneytrains": [
+     "276510"
+    ]
+   },
+   "label": {
+    "text": "Riverstone",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 300,
+   "y": 530,
+   "interchange": true
+  },
+  {
+   "id": "riverwood",
+   "parents": {
+    "sydneytrains": [
+     "221010"
+    ]
+   },
+   "label": {
+    "text": "Riverwood",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 840,
+   "y": 1480
+  },
+  {
+   "id": "rockdale",
+   "parents": {
+    "sydneytrains": [
+     "221620"
+    ]
+   },
+   "label": {
+    "text": "Rockdale",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1580
+  },
+  {
+   "id": "rooty_hill",
+   "parents": {
+    "sydneytrains": [
+     "276610"
+    ]
+   },
+   "label": {
+    "text": "Rooty Hill",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 360,
+   "y": 710,
+   "interchange": true
+  },
+  {
+   "id": "roseville",
+   "parents": {
+    "sydneytrains": [
+     "206910"
+    ]
+   },
+   "label": {
+    "text": "Roseville",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 450,
+   "interchange": true
+  },
+  {
+   "id": "rouse_hill",
+   "parents": {
+    "metro": [
+     "2155383"
+    ]
+   },
+   "label": {
+    "text": "Rouse Hill",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 630,
+   "y": 150
+  },
+  {
+   "id": "royal_randwick",
+   "parents": {
+    "lightrail": [
+     "202158"
+    ]
+   },
+   "label": {
+    "text": "Royal Randwick",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 1600,
+   "y": 1300
+  },
+  {
+   "id": "rozelle_bay",
+   "parents": {
+    "lightrail": [
+     "203839"
+    ]
+   },
+   "label": {
+    "text": "Rozelle Bay",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1030,
+   "y": 880
+  },
+  {
+   "id": "schofields",
+   "parents": {
+    "sydneytrains": [
+     "276220"
+    ]
+   },
+   "label": {
+    "text": "Schofields",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 330,
+   "y": 560,
+   "interchange": true
+  },
+  {
+   "id": "sefton",
+   "parents": {
+    "sydneytrains": [
+     "216210"
+    ]
+   },
+   "label": {
+    "text": "Sefton",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 650,
+   "y": 1080
+  },
+  {
+   "id": "seven_hills",
+   "parents": {
+    "sydneytrains": [
+     "214710"
+    ]
+   },
+   "label": {
+    "text": "Seven Hills",
+    "anchor": "e",
+    "dx": 14,
+    "dy": 0
+   },
+   "x": 450,
+   "y": 680,
+   "interchange": true
+  },
+  {
+   "id": "st_james",
+   "parents": {
+    "sydneytrains": [
+     "200050"
+    ]
+   },
+   "label": {
+    "text": "St James",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1610,
+   "y": 840,
+   "interchange": true
+  },
+  {
+   "id": "st_leonards",
+   "parents": {
+    "sydneytrains": [
+     "206520"
+    ]
+   },
+   "x": 1370,
+   "y": 600,
+   "label": {
+    "text": "St Leonards",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "st_marys",
+   "parents": {
+    "sydneytrains": [
+     "276010"
+    ]
+   },
+   "label": {
+    "text": "St Marys",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 300,
+   "y": 770,
+   "interchange": true
+  },
+  {
+   "id": "st_peters",
+   "parents": {
+    "sydneytrains": [
+     "204410"
+    ]
+   },
+   "label": {
+    "text": "St Peters",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1320,
+   "interchange": true
+  },
+  {
+   "id": "stanmore",
+   "parents": {
+    "sydneytrains": [
+     "204810"
+    ]
+   },
+   "label": {
+    "text": "Stanmore",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 1110,
+   "y": 1220,
+   "interchange": true
+  },
+  {
+   "id": "strathfield",
+   "parents": {
+    "sydneytrains": [
+     "213510"
+    ]
+   },
+   "label": {
+    "text": "Strathfield",
+    "anchor": "w",
+    "dx": -18,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 1070,
+   "interchange": true
+  },
+  {
+   "id": "summer_hill",
+   "parents": {
+    "sydneytrains": [
+     "213010"
+    ]
+   },
+   "label": {
+    "text": "Summer Hill",
+    "anchor": "w",
+    "dx": -18,
+    "dy": 0
+   },
+   "x": 960,
+   "y": 1190,
+   "interchange": true
+  },
+  {
+   "id": "surry_hills",
+   "parents": {
+    "lightrail": [
+     "201029"
+    ]
+   },
+   "x": 1450,
+   "y": 1220,
+   "label": {
+    "text": "Surry Hills",
+    "anchor": "e",
+    "dx": 14,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "sutherland",
+   "parents": {
+    "sydneytrains": [
+     "223210"
+    ]
+   },
+   "label": {
+    "text": "Sutherland",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1880
+  },
+  {
+   "id": "sydenham",
+   "parents": {
+    "metro": [
+     "204420"
+    ],
+    "sydneytrains": [
+     "204420"
+    ]
+   },
+   "label": {
+    "text": "Sydenham",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1380,
+   "interchange": true
+  },
+  {
+   "id": "tallawong",
+   "parents": {
+    "metro": [
+     "2155384"
+    ]
+   },
+   "label": {
+    "text": "Tallawong",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 600,
+   "y": 120
+  },
+  {
+   "id": "taverners_hill",
+   "parents": {
+    "lightrail": [
+     "2040107"
+    ]
+   },
+   "label": {
+    "text": "Taverners Hill",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1030,
+   "y": 730
+  },
+  {
+   "id": "tempe",
+   "parents": {
+    "sydneytrains": [
+     "204430"
+    ]
+   },
+   "label": {
+    "text": "Tempe",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 1430
+  },
+  {
+   "id": "the_star",
+   "parents": {
+    "lightrail": [
+     "200941"
+    ]
+   },
+   "label": {
+    "text": "The Star",
+    "anchor": "se",
+    "dx": 8,
+    "dy": 14
+   },
+   "x": 1270,
+   "y": 940
+  },
+  {
+   "id": "thornleigh",
+   "parents": {
+    "sydneytrains": [
+     "212010"
+    ]
+   },
+   "label": {
+    "text": "Thornleigh",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 240
+  },
+  {
+   "id": "toongabbie",
+   "parents": {
+    "sydneytrains": [
+     "214610"
+    ]
+   },
+   "label": {
+    "text": "Toongabbie",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 480,
+   "y": 710,
+   "interchange": true
+  },
+  {
+   "id": "town_hall",
+   "parents": {
+    "sydneytrains": [
+     "200070"
+    ],
+    "lightrail": [
+     "200070"
+    ]
+   },
+   "x": 1370,
+   "y": 1020,
+   "label": {
+    "text": "Town Hall",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "turramurra",
+   "parents": {
+    "sydneytrains": [
+     "207410"
+    ]
+   },
+   "label": {
+    "text": "Turramurra",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 300
+  },
+  {
+   "id": "turrella",
+   "parents": {
+    "sydneytrains": [
+     "220530"
+    ]
+   },
+   "label": {
+    "text": "Turrella",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 1230,
+   "y": 1480
+  },
+  {
+   "id": "unsw_anzac_parade",
+   "parents": {
+    "lightrail": [
+     "203360"
+    ]
+   },
+   "label": {
+    "text": "UNSW Anzac Parade",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1620,
+   "y": 1390
+  },
+  {
+   "id": "unsw_high_street",
+   "parents": {
+    "lightrail": [
+     "2031156"
+    ]
+   },
+   "label": {
+    "text": "UNSW High Street",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 14
+   },
+   "x": 1740,
+   "y": 1300
+  },
+  {
+   "id": "victoria_cross",
+   "parents": {
+    "metro": [
+     "206044"
+    ]
+   },
+   "x": 1510,
+   "y": 760,
+   "label": {
+    "text": "Victoria Cross",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   }
+  },
+  {
+   "id": "villawood",
+   "parents": {
+    "sydneytrains": [
+     "216320"
+    ]
+   },
+   "label": {
+    "text": "Villawood",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 530,
+   "y": 1200
+  },
+  {
+   "id": "vineyard",
+   "parents": {
+    "sydneytrains": [
+     "276520"
+    ]
+   },
+   "label": {
+    "text": "Vineyard",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 270,
+   "y": 500,
+   "interchange": true
+  },
+  {
+   "id": "wahroonga",
+   "parents": {
+    "sydneytrains": [
+     "207610"
+    ]
+   },
+   "label": {
+    "text": "Wahroonga",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 240
+  },
+  {
+   "id": "waitara",
+   "parents": {
+    "sydneytrains": [
+     "207710"
+    ]
+   },
+   "label": {
+    "text": "Waitara",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 210
+  },
+  {
+   "id": "wansey_road",
+   "parents": {
+    "lightrail": [
+     "2031157"
+    ]
+   },
+   "label": {
+    "text": "Wansey Road",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 1670,
+   "y": 1300
+  },
+  {
+   "id": "waratah_mills",
+   "parents": {
+    "lightrail": [
+     "220368"
+    ]
+   },
+   "label": {
+    "text": "Waratah Mills",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1030,
+   "y": 670
+  },
+  {
+   "id": "warrawee",
+   "parents": {
+    "sydneytrains": [
+     "207420"
+    ]
+   },
+   "label": {
+    "text": "Warrawee",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 270
+  },
+  {
+   "id": "warwick_farm",
+   "parents": {
+    "sydneytrains": [
+     "217010"
+    ]
+   },
+   "label": {
+    "text": "Warwick Farm",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 450,
+   "y": 1330,
+   "interchange": true
+  },
+  {
+   "id": "waterfall",
+   "parents": {
+    "sydneytrains": [
+     "223330"
+    ]
+   },
+   "label": {
+    "text": "Waterfall",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1290,
+   "y": 2000
+  },
+  {
+   "id": "waterloo",
+   "parents": {
+    "metro": [
+     "201721"
+    ]
+   },
+   "label": {
+    "text": "Waterloo",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 1370,
+   "y": 1260
+  },
+  {
+   "id": "waverton",
+   "parents": {
+    "sydneytrains": [
+     "206020"
+    ]
+   },
+   "x": 1370,
+   "y": 720,
+   "label": {
+    "text": "Waverton",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "wentworth_park",
+   "parents": {
+    "lightrail": [
+     "200935"
+    ]
+   },
+   "label": {
+    "text": "Wentworth Park",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 1090,
+   "y": 940
+  },
+  {
+   "id": "wentworthville",
+   "parents": {
+    "sydneytrains": [
+     "214520"
+    ]
+   },
+   "label": {
+    "text": "Wentworthville",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 540,
+   "y": 770,
+   "interchange": true
+  },
+  {
+   "id": "werrington",
+   "parents": {
+    "sydneytrains": [
+     "274710"
+    ]
+   },
+   "label": {
+    "text": "Werrington",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 270,
+   "y": 800,
+   "interchange": true
+  },
+  {
+   "id": "west_ryde",
+   "parents": {
+    "sydneytrains": [
+     "211420"
+    ]
+   },
+   "label": {
+    "text": "West Ryde",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 840,
+   "y": 590
+  },
+  {
+   "id": "westmead",
+   "parents": {
+    "sydneytrains": [
+     "214510"
+    ]
+   },
+   "label": {
+    "text": "Westmead",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 570,
+   "y": 800,
+   "interchange": true
+  },
+  {
+   "id": "windsor",
+   "parents": {
+    "sydneytrains": [
+     "275620"
+    ]
+   },
+   "label": {
+    "text": "Windsor",
+    "anchor": "w",
+    "dx": -14,
+    "dy": 0
+   },
+   "x": 210,
+   "y": 440,
+   "interchange": true
+  },
+  {
+   "id": "wolli_creek",
+   "parents": {
+    "sydneytrains": [
+     "220510"
+    ]
+   },
+   "label": {
+    "text": "Wolli Creek",
+    "anchor": "sw",
+    "dx": -8,
+    "dy": 12
+   },
+   "x": 1290,
+   "y": 1480,
+   "interchange": true
+  },
+  {
+   "id": "wollstonecraft",
+   "parents": {
+    "sydneytrains": [
+     "206510"
+    ]
+   },
+   "x": 1370,
+   "y": 660,
+   "label": {
+    "text": "Wollstonecraft",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "woolooware",
+   "parents": {
+    "sydneytrains": [
+     "223010"
+    ]
+   },
+   "label": {
+    "text": "Woolooware",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 1440,
+   "y": 2030
+  },
+  {
+   "id": "wynyard",
+   "parents": {
+    "sydneytrains": [
+     "200080"
+    ],
+    "lightrail": [
+     "200080"
+    ]
+   },
+   "x": 1370,
+   "y": 940,
+   "label": {
+    "text": "Wynyard",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "interchange": true
+  },
+  {
+   "id": "yagoona",
+   "parents": {
+    "sydneytrains": [
+     "219910"
+    ]
+   },
+   "label": {
+    "text": "Yagoona",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 690,
+   "y": 1120
+  },
+  {
+   "id": "yennora",
+   "parents": {
+    "sydneytrains": [
+     "216120"
+    ]
+   },
+   "label": {
+    "text": "Yennora",
+    "anchor": "e",
+    "dx": 14,
+    "dy": 0
+   },
+   "x": 520,
+   "y": 970,
+   "interchange": true
+  }
+ ],
+ "lines": [
+  {
+   "id": "L1",
+   "mode": "lightrail",
+   "route_ids": [
+    "IWLR-191"
+   ],
+   "colour": "#BE1622",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "central_grand_concourse",
+      "capitol_square",
+      "paddy_s_markets",
+      "exhibition_centre",
+      "convention_centre",
+      "pyrmont_bay",
+      "the_star",
+      "john_street_square",
+      "bank_street",
+      "wentworth_park",
+      "glebe",
+      "jubilee_park",
+      "rozelle_bay",
+      "lilyfield",
+      "leichhardt_north",
+      "hawthorne",
+      "marion",
+      "taverners_hill",
+      "lewisham_west",
+      "waratah_mills",
+      "arlington",
+      "dulwich_grove",
+      "dulwich_hill"
+     ],
+     "track": 0,
+     "via": {
+      "6": [],
+      "10": []
+     }
+    }
+   ]
+  },
+  {
+   "id": "L2",
+   "mode": "lightrail",
+   "route_ids": [
+    "1001_L2"
+   ],
+   "colour": "#DD1E25",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "circular_quay",
+      "bridge_street",
+      "wynyard",
+      "qvb",
+      "town_hall",
+      "chinatown",
+      "haymarket",
+      "central",
+      "surry_hills",
+      "moore_park",
+      "royal_randwick",
+      "wansey_road",
+      "unsw_high_street",
+      "randwick"
+     ],
+     "track": 8
+    }
+   ]
+  },
+  {
+   "id": "L3",
+   "mode": "lightrail",
+   "route_ids": [
+    "1001_L3"
+   ],
+   "colour": "#781140",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "circular_quay",
+      "bridge_street",
+      "wynyard",
+      "qvb",
+      "town_hall",
+      "chinatown",
+      "haymarket",
+      "central",
+      "surry_hills",
+      "moore_park",
+      "es_marks",
+      "kensington",
+      "unsw_anzac_parade",
+      "kingsford",
+      "juniors_kingsford"
+     ],
+     "track": 7
+    }
+   ]
+  },
+  {
+   "id": "M1",
+   "mode": "metro",
+   "route_ids": [
+    "SMNW_M1"
+   ],
+   "colour": "#168388",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "tallawong",
+      "rouse_hill",
+      "kellyville",
+      "bella_vista",
+      "norwest",
+      "hills_showground",
+      "castle_hill",
+      "cherrybrook",
+      "epping",
+      "macquarie_university",
+      "macquarie_park",
+      "north_ryde",
+      "chatswood",
+      "crows_nest",
+      "victoria_cross",
+      "barangaroo",
+      "martin_place",
+      "gadigal",
+      "central",
+      "waterloo",
+      "sydenham"
+     ],
+     "track": 0,
+     "via": {
+      "8": [
+       [
+        1250,
+        360
+       ]
+      ],
+      "12": [
+       [
+        1510,
+        620
+       ]
+      ],
+      "18": [],
+      "19": [
+       [
+        1370,
+        1300
+       ]
+      ],
+      "16": [
+       [
+        1510,
+        1000
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "T1",
+   "mode": "sydneytrains",
+   "route_ids": [
+    "NSN_1a",
+    "NSN_2a",
+    "NSN_2i",
+    "NSN_2k",
+    "WST_1a",
+    "WST_1b",
+    "WST_2c",
+    "WST_2d"
+   ],
+   "colour": "#F99D1C",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "berowra",
+      "mount_kuring_gai",
+      "mount_colah",
+      "asquith",
+      "hornsby",
+      "waitara",
+      "wahroonga",
+      "warrawee",
+      "turramurra",
+      "pymble",
+      "gordon",
+      "killara",
+      "lindfield",
+      "roseville",
+      "chatswood",
+      "artarmon",
+      "st_leonards",
+      "wollstonecraft",
+      "waverton",
+      "north_sydney",
+      "milsons_point",
+      "wynyard",
+      "town_hall",
+      "central",
+      "redfern",
+      "strathfield",
+      "lidcombe",
+      "granville",
+      "parramatta",
+      "westmead",
+      "wentworthville",
+      "pendle_hill",
+      "toongabbie",
+      "seven_hills",
+      "blacktown",
+      "doonside",
+      "rooty_hill",
+      "mount_druitt",
+      "st_marys",
+      "werrington",
+      "kingswood",
+      "penrith",
+      "emu_plains"
+     ],
+     "track": 1,
+     "via": {
+      "24": [
+       [
+        990,
+        1220
+       ]
+      ]
+     }
+    },
+    {
+     "stations": [
+      "blacktown",
+      "marayong",
+      "quakers_hill",
+      "schofields",
+      "riverstone",
+      "vineyard",
+      "mulgrave",
+      "windsor",
+      "clarendon",
+      "east_richmond",
+      "richmond"
+     ],
+     "track": 1
+    }
+   ]
+  },
+  {
+   "id": "T2",
+   "mode": "sydneytrains",
+   "route_ids": [
+    "IWL_1a",
+    "IWL_1b",
+    "IWL_1c",
+    "IWL_1d",
+    "IWL_1e",
+    "IWL_1f",
+    "IWL_1g",
+    "IWL_1i",
+    "IWL_1j",
+    "IWL_2a",
+    "IWL_2b",
+    "IWL_2c",
+    "IWL_2d",
+    "IWL_2f",
+    "IWL_2g",
+    "IWL_2i",
+    "IWL_2j"
+   ],
+   "colour": "#0098CD",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "museum",
+      "central",
+      "redfern",
+      "macdonaldtown",
+      "newtown",
+      "stanmore",
+      "petersham",
+      "lewisham",
+      "summer_hill",
+      "ashfield",
+      "croydon",
+      "burwood",
+      "strathfield",
+      "homebush",
+      "flemington",
+      "lidcombe",
+      "auburn",
+      "clyde",
+      "granville",
+      "merrylands",
+      "guildford",
+      "yennora",
+      "fairfield",
+      "canley_vale",
+      "cabramatta",
+      "warwick_farm",
+      "liverpool",
+      "casula",
+      "glenfield",
+      "edmondson_park",
+      "leppington"
+     ],
+     "track": 2,
+     "via": {
+      "0": [
+       [
+        1570,
+        1140
+       ]
+      ],
+      "7": []
+     }
+    },
+    {
+     "stations": [
+      "granville",
+      "harris_park",
+      "parramatta"
+     ],
+     "track": 2
+    },
+    {
+     "stations": [
+      "museum",
+      "st_james",
+      "circular_quay",
+      "wynyard",
+      "town_hall",
+      "central"
+     ],
+     "track": 2
+    }
+   ]
+  },
+  {
+   "id": "T3",
+   "mode": "sydneytrains",
+   "route_ids": [
+    "T3_1a",
+    "T3_1b",
+    "T3_1c",
+    "T3_2a",
+    "T3_2c"
+   ],
+   "colour": "#F37021",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "museum",
+      "central",
+      "redfern",
+      "macdonaldtown",
+      "newtown",
+      "stanmore",
+      "petersham",
+      "lewisham",
+      "summer_hill",
+      "ashfield",
+      "croydon",
+      "burwood",
+      "strathfield",
+      "homebush",
+      "flemington",
+      "lidcombe",
+      "berala",
+      "regents_park",
+      "sefton",
+      "chester_hill",
+      "leightonfield",
+      "villawood",
+      "carramar",
+      "cabramatta",
+      "warwick_farm",
+      "liverpool"
+     ],
+     "track": 4,
+     "via": {
+      "0": [
+       [
+        1570,
+        1140
+       ]
+      ],
+      "7": [],
+      "22": []
+     }
+    },
+    {
+     "stations": [
+      "museum",
+      "st_james",
+      "circular_quay",
+      "wynyard",
+      "town_hall",
+      "central"
+     ],
+     "track": 4
+    }
+   ]
+  },
+  {
+   "id": "T4",
+   "mode": "sydneytrains",
+   "route_ids": [
+    "ESI_1a",
+    "ESI_1c",
+    "ESI_1d",
+    "ESI_1f",
+    "ESI_2a",
+    "ESI_2b",
+    "ESI_2d",
+    "ESI_2e"
+   ],
+   "colour": "#005AA3",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "bondi_junction",
+      "edgecliff",
+      "kings_cross",
+      "martin_place",
+      "town_hall",
+      "central",
+      "redfern",
+      "erskineville",
+      "st_peters",
+      "sydenham",
+      "tempe",
+      "wolli_creek",
+      "arncliffe",
+      "banksia",
+      "rockdale",
+      "kogarah",
+      "carlton",
+      "allawah",
+      "hurstville",
+      "penshurst",
+      "mortdale",
+      "oatley",
+      "como",
+      "jannali",
+      "sutherland",
+      "loftus",
+      "engadine",
+      "heathcote",
+      "waterfall"
+     ],
+     "track": 0,
+     "via": {
+      "3": [
+       [
+        1410,
+        980
+       ]
+      ]
+     }
+    },
+    {
+     "stations": [
+      "sutherland",
+      "kirrawee",
+      "gymea",
+      "miranda",
+      "caringbah",
+      "woolooware",
+      "cronulla"
+     ],
+     "track": 0
+    }
+   ]
+  },
+  {
+   "id": "T5",
+   "mode": "sydneytrains",
+   "route_ids": [
+    "CMB_1a",
+    "CMB_1b",
+    "CMB_2a",
+    "CMB_2b",
+    "CMB_2c"
+   ],
+   "colour": "#C4258F",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "richmond",
+      "east_richmond",
+      "clarendon",
+      "windsor",
+      "mulgrave",
+      "vineyard",
+      "riverstone",
+      "schofields",
+      "quakers_hill",
+      "marayong",
+      "blacktown",
+      "seven_hills",
+      "toongabbie",
+      "pendle_hill",
+      "wentworthville",
+      "westmead",
+      "parramatta",
+      "harris_park",
+      "merrylands",
+      "guildford",
+      "yennora",
+      "fairfield",
+      "canley_vale",
+      "cabramatta",
+      "warwick_farm",
+      "liverpool",
+      "casula",
+      "glenfield",
+      "edmondson_park",
+      "leppington"
+     ],
+     "track": 3
+    },
+    {
+     "stations": [
+      "blacktown",
+      "doonside",
+      "rooty_hill",
+      "mount_druitt",
+      "st_marys",
+      "werrington",
+      "kingswood",
+      "penrith",
+      "emu_plains"
+     ],
+     "track": 3
+    },
+    {
+     "stations": [
+      "glenfield",
+      "macquarie_fields",
+      "ingleburn",
+      "minto",
+      "leumeah",
+      "campbelltown"
+     ],
+     "track": 3
+    }
+   ]
+  },
+  {
+   "id": "T6",
+   "mode": "sydneytrains",
+   "route_ids": [
+    "T6_1a",
+    "T6_2a",
+    "T6_2b"
+   ],
+   "colour": "#7C3E21",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "lidcombe",
+      "berala",
+      "regents_park",
+      "birrong",
+      "yagoona",
+      "bankstown"
+     ],
+     "track": 5
+    }
+   ]
+  },
+  {
+   "id": "T7",
+   "mode": "sydneytrains",
+   "route_ids": [
+    "OLY_1a",
+    "OLY_1b",
+    "OLY_2a",
+    "OLY_2b"
+   ],
+   "colour": "#6F818E",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "lidcombe",
+      "olympic_park"
+     ],
+     "track": 0
+    }
+   ]
+  },
+  {
+   "id": "T8",
+   "mode": "sydneytrains",
+   "route_ids": [
+    "APS_1a",
+    "APS_1c",
+    "APS_1e",
+    "APS_1f",
+    "APS_2a",
+    "APS_2b",
+    "APS_2c",
+    "APS_2e",
+    "APS_2f"
+   ],
+   "colour": "#00954C",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "museum",
+      "central",
+      "green_square",
+      "mascot",
+      "domestic_airport",
+      "international_airport",
+      "wolli_creek",
+      "turrella",
+      "bardwell_park",
+      "bexley_north",
+      "kingsgrove",
+      "beverly_hills",
+      "narwee",
+      "riverwood",
+      "padstow",
+      "revesby",
+      "panania",
+      "east_hills",
+      "holsworthy",
+      "glenfield",
+      "macquarie_fields",
+      "ingleburn",
+      "minto",
+      "leumeah",
+      "campbelltown",
+      "macarthur"
+     ],
+     "track": 1,
+     "via": {
+      "0": [
+       [
+        1570,
+        1140
+       ]
+      ],
+      "1": [
+       [
+        1370,
+        1180
+       ],
+       [
+        1430,
+        1240
+       ]
+      ],
+      "5": [
+       [
+        1430,
+        1480
+       ]
+      ],
+      "18": []
+     }
+    },
+    {
+     "stations": [
+      "museum",
+      "st_james",
+      "circular_quay",
+      "wynyard",
+      "town_hall",
+      "central"
+     ],
+     "track": 1
+    },
+    {
+     "stations": [
+      "central",
+      "redfern",
+      "erskineville",
+      "st_peters",
+      "sydenham",
+      "wolli_creek"
+     ],
+     "track": 1
+    },
+    {
+     "stations": [
+      "glenfield",
+      "edmondson_park",
+      "leppington"
+     ],
+     "track": 1
+    }
+   ]
+  },
+  {
+   "id": "T9",
+   "mode": "sydneytrains",
+   "route_ids": [
+    "NTH_1a",
+    "NTH_1b",
+    "NTH_2a"
+   ],
+   "colour": "#D11F2F",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "hornsby",
+      "normanhurst",
+      "thornleigh",
+      "pennant_hills",
+      "beecroft",
+      "cheltenham",
+      "epping",
+      "eastwood",
+      "denistone",
+      "west_ryde",
+      "meadowbank",
+      "rhodes",
+      "concord_west",
+      "north_strathfield",
+      "strathfield",
+      "redfern",
+      "central",
+      "town_hall",
+      "wynyard",
+      "milsons_point",
+      "north_sydney",
+      "waverton",
+      "wollstonecraft",
+      "st_leonards",
+      "artarmon",
+      "chatswood",
+      "roseville",
+      "lindfield",
+      "killara",
+      "gordon"
+     ],
+     "track": 0,
+     "via": {
+      "0": [
+       [
+        870,
+        180
+       ]
+      ],
+      "14": [
+       [
+        990,
+        1220
+       ]
+      ],
+      "13": [
+       [
+        840,
+        950
+       ],
+       [
+        900,
+        1010
+       ]
+      ]
+     }
+    }
+   ]
+  }
+ ],
+ "ignored_route_ids": [
+  "1001_LX",
+  "RTTA_DEF",
+  "RTTA_REV"
+ ]
+}

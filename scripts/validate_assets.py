@@ -22,7 +22,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SCHEMAS = os.path.join(os.path.dirname(HERE), 'schemas')
 sys.path.insert(0, HERE)
 import build_db  # noqa: E402  非营运词表的唯一真相
+import build_shapes  # noqa: E402  M6 shapes 资产对账
 from gtfs_modes import self_parent  # noqa: E402  与 Worker MODE_TOPOLOGY 同一个标记
+
+
+INSTALL_WARN_BYTES = 44_500_000   # M6 §6.4：四库 + shapes + 区表 > 44.5 MB 就报（MB = 10^6，与 build_db 的打印同口径）；硬线 45
 
 
 def sha256(p):
@@ -131,6 +135,31 @@ def main():
         db.close()
         print('OK   %s: gz %.2f MB / sha256 / meta / stop_parents 全部对账一致'
               % (mode, feed['size_bytes'] / 1e6))
+
+    # M6 §6.1：shapes 顶层键。每项与盘上 .bin.gz、与该 mode 的 feeds 版本和库里的 route 逐项对账
+    for mode, entry in manifest.get('shapes', {}).items():
+        if mode not in manifest['feeds']:
+            fails.append('shapes 有 %s，但 feeds 里没有这个 mode' % mode)
+            continue
+        errs = build_shapes.asset_errors(d, mode, entry, manifest['feeds'][mode]['static_version'])
+        fails += errs
+        if not errs:
+            print('OK   %s: shapes gz %.1f KB / bin %.1f KB / sha256 / 索引全部对账一致'
+                  % (mode, entry['size_bytes'] / 1e3, entry['bin_bytes'] / 1e3))
+
+    # M6 §6.4：装机体积告警（只告警，不进 fails）。= 各库解压后 + 各 shapes 解压后；区表在 buses 库里，已含。
+    install = sum(os.path.getsize(os.path.join(d, m + '.sqlite')) for m in manifest['feeds']
+                  if os.path.exists(os.path.join(d, m + '.sqlite')))
+    install += sum(e['bin_bytes'] for e in manifest.get('shapes', {}).values())
+    msg = '装机体积 %.2f MB（四库 + shapes + 区表；告警线 %.1f MB，硬线 45 MB）' % (install / 1e6, INSTALL_WARN_BYTES / 1e6)
+    if install > INSTALL_WARN_BYTES:
+        print('WARN ' + msg)
+        summary = os.environ.get('GITHUB_STEP_SUMMARY')
+        if summary:
+            with open(summary, 'a', encoding='utf-8') as f:
+                f.write('## 装机体积告警（不阻塞发版）\n\n%s。R7：先砍区表抽稀精度，再报 owner。\n' % msg)
+    else:
+        print('OK   ' + msg)
 
     # non_revenue_headsigns.json：必须存在，且与 build_db 的常量逐条相等（挡「有人手改了资产」）
     wlp = os.path.join(d, build_db.NON_REVENUE_HEADSIGNS_FILENAME)
