@@ -28,7 +28,7 @@
 <body>
 <main>
   <h1>Data Attribution</h1>
-  <p class="sub">TransportPeek · last updated 2026-09-07</p>
+  <p class="sub">TransportPeek · last updated 2026-09-25</p>
 
   <blockquote>
     <strong>Data © Transport for NSW.</strong> Timetable and real-time data used by TransportPeek
@@ -51,12 +51,22 @@
   </table>
   <p>Source: <a href="https://opendata.transport.nsw.gov.au/">Transport for NSW Open Data Hub</a>.</p>
 
+  <h2>Suburb boundaries</h2>
+  <blockquote>
+    <strong>© Australian Bureau of Statistics, CC BY 4.0.</strong> The “find stops by suburb” list is derived from the
+    ABS Australian Statistical Geography Standard (ASGS) Edition 3, Suburbs and Localities (SAL) 2021, GDA2020 digital
+    boundary files, licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+    Changes: NSW suburbs intersecting the bus network only, empty geometries removed, “(NSW)” suffixes shortened,
+    boundaries simplified (Douglas-Peucker, 5 m), and each bus stop assigned to the suburb containing it.
+    Stops on a street that forms a suburb boundary may be assigned to either side.
+  </blockquote>
+
   <h2>Modifications</h2>
   <p>CC BY 4.0 requires that changes be indicated. The published timetable databases are a
      transformation of the upstream GTFS feeds, not a verbatim copy:</p>
   <ul>
     <li>Converted from GTFS text files to SQLite, and gzip-compressed.</li>
-    <li>Shapes, occupancy and vehicle files dropped.</li>
+    <li>Occupancy and vehicle files dropped. Route shapes are published as separate per-mode files, simplified (Douglas-Peucker, 5 m) and delta-encoded.</li>
     <li>Sydney Trains: trips belonging to the <code>NSWTrains</code> agency removed (they duplicate
         a separate feed).</li>
     <li>Trips that serve no boarding stop (empty running) removed; stop times where the vehicle
@@ -74,7 +84,7 @@
 
   <section class="zh">
     <h1>数据归属</h1>
-    <p class="sub">TransportPeek · 最后更新 2026-09-07</p>
+    <p class="sub">TransportPeek · 最后更新 2026-09-25</p>
 
     <blockquote>
       <strong>数据版权归 Transport for NSW 所有。</strong>TransportPeek 使用的时刻表与实时数据
@@ -85,11 +95,20 @@
     <p>TransportPeek 是独立应用，非 Transport for NSW 出品，也未获其背书或支持。
        发车信息尽力而为，请勿作为赶车的唯一依据。</p>
 
+    <h2>区界数据</h2>
+    <blockquote>
+      <strong>© Australian Bureau of Statistics，CC BY 4.0。</strong>「按区找站」来自 ABS 澳大利亚统计地理标准（ASGS）
+      第 3 版 Suburbs and Localities（SAL）2021 GDA2020 边界文件，按
+      <a href="https://creativecommons.org/licenses/by/4.0/deed.zh">CC BY 4.0</a> 授权。改动：只取与公交网络相交的 NSW 区，
+      去掉空几何，缩短「(NSW)」后缀，边界抽稀（Douglas-Peucker，5 米），并把每个公交站归到包含它的区。
+      站在作为区界的街上时，可能被归到街的任一侧。
+    </blockquote>
+
     <h2>做了哪些改动</h2>
     <p>CC BY 4.0 要求标明改动。发布的时刻表数据库是对上游 GTFS 的加工，不是原样搬运：</p>
     <ul>
       <li>GTFS 文本文件转成 SQLite，再 gzip 压缩。</li>
-      <li>丢弃 shapes、occupancies、vehicle_* 等文件。</li>
+      <li>丢弃 occupancies、vehicle_* 等文件；线路走向（shapes）按 mode 单独发布，经 Douglas-Peucker 5 米抽稀、差分编码。</li>
       <li>火车：裁掉 <code>NSWTrains</code> 机构的车次（与另一个独立 feed 重复）。</li>
       <li>裁掉全程不上客的班次（空车调度），以及既不上客也不下客的停站行（飞站）。</li>
       <li>从站台子站名里解析出站台号，写进 <code>platform_code</code> 列。</li>

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "TransportPeek config.json",
-  "description": "契约 4b · 与 manifest 同源的运行配置（GitHub Release 资产，不经 Worker，不用 Remote Config）。拉不到或校验失败 → 客户端用内置 fail-closed 默认（广告全关）。依据 PROJECT_REQUIREMENTS v1.1 §4 §6 §8。冻结日期 2026-09-06，改动需主 agent 批准。",
+  "description": "契约 4b · 与 manifest 同源的运行配置（GitHub Release 资产，不经 Worker，不用 Remote Config）。拉不到或校验失败 → 客户端用内置 fail-closed 默认（广告全关）。依据 PROJECT_REQUIREMENTS v1.1 §4 §6 §8。冻结日期 2026-09-06，改动需主 agent 批准。2026-09-24 M6 加性扩展 `map`（owner 批准）。",
   "type": "object", "additionalProperties": false,
   "required": ["schema_version", "ads", "realtime", "force_update"],
   "properties": {
@@ -25,6 +25,12 @@
       "widget_stale_after_minutes": {"type": "integer", "minimum": 15, "default": 45, "description": "Widget：距 fetched_at 超过此分钟整块灰显（须 > widget_min_refresh_minutes）"}}},
     "force_update": {"type": "object", "additionalProperties": false, "required": ["min_supported_app_version", "message_key"], "properties": {
       "min_supported_app_version": {"type": "integer", "minimum": 1, "description": "与 manifest 同名字段取较大者生效；只用于破坏性变更"},
-      "message_key": {"type": "string", "pattern": "^[a-z0-9_]+$", "description": "strings-master.csv 中的文案 key，如 force_update_generic"}}}
+      "message_key": {"type": "string", "pattern": "^[a-z0-9_]+$", "description": "strings-master.csv 中的文案 key，如 force_update_generic"}}},
+    "map": {"type": "object", "additionalProperties": false, "description": "M6 D6 / §5.8–5.9：街道图瓦片地址（换源不用发版）+ 车辆淡出阈值。可缺省 = 客户端默认值。", "properties": {
+      "map_style_url_light": {"type": "string", "format": "uri", "default": "https://tiles.openfreemap.org/styles/liberty"},
+      "map_style_url_dark": {"type": "string", "format": "uri", "default": "https://tiles.openfreemap.org/styles/dark"},
+      "vehicle_fade_after_seconds": {"type": "integer", "minimum": 1, "default": 120},
+      "vehicle_grey_after_seconds": {"type": "integer", "minimum": 1, "default": 300},
+      "vehicle_hide_after_seconds": {"type": "integer", "minimum": 1, "default": 900}}}
   }
 }

@@ -22,6 +22,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gtfs_modes import PUBLISH_MODES, self_parent
 import build_db
+import shapes
 
 # manifest/config 的 schema_version（契约 const 1）
 MANIFEST_SCHEMA_VERSION = 1
@@ -106,9 +107,25 @@ def feed_entry(build_dir, mode, base_url):
     }
 
 
+def shapes_entry(build_dir, mode, base_url, static_version):
+    """M6 §6.1：manifest 顶层 `shapes` 的一项。没有 shapes 文件的 mode 返回 None（不写这一项）。"""
+    gz = os.path.join(build_dir, 'shapes.%s.bin.gz' % mode)
+    if not os.path.exists(gz):
+        return None
+    return {
+        'url': '%s/shapes.%s.bin.gz' % (base_url, mode),
+        'sha256': sha256(gz),
+        'size_bytes': os.path.getsize(gz),
+        'bin_bytes': os.path.getsize(gz[:-len('.gz')]),
+        'format': shapes.FORMAT,
+        'static_version': static_version,
+        'compression': 'gzip',
+    }
+
+
 def build_config(min_app_version=MIN_SUPPORTED_APP_VERSION):
     """契约 4b。首版广告全关；realtime 按 M0-0.14 的定稿取 60 s（不是区间取中的 45）。"""
-    return {
+    cfg = {
         'schema_version': CONFIG_SCHEMA_VERSION,
         'ads': {
             'enabled': False,
@@ -140,7 +157,19 @@ def build_config(min_app_version=MIN_SUPPORTED_APP_VERSION):
             'min_supported_app_version': min_app_version,
             'message_key': 'force_update_generic',
         },
+        # M6 D6 / §5.8–5.9（契约 4b 加性扩展 `map`）：与 P4 MapConfig 默认值逐字一致
+        'map': {
+            'map_style_url_light': 'https://tiles.openfreemap.org/styles/liberty',
+            'map_style_url_dark': 'https://tiles.openfreemap.org/styles/dark',
+            'vehicle_fade_after_seconds': 120,
+            'vehicle_grey_after_seconds': 300,
+            'vehicle_hide_after_seconds': 900,
+        },
     }
+    # JSON Schema 表达不了「fade < grey < hide」，在这里断言
+    mp = cfg['map']
+    assert mp['vehicle_fade_after_seconds'] < mp['vehicle_grey_after_seconds'] < mp['vehicle_hide_after_seconds']
+    return cfg
 
 
 def main():
@@ -159,8 +188,12 @@ def main():
     modes = a.modes or PUBLISH_MODES
 
     feeds = {}
+    shapes_map = {}
     for mode in modes:
         sv, feeds[mode] = feed_entry(a.build_dir, mode, base)
+        se = shapes_entry(a.build_dir, mode, base, sv)
+        if se is not None:
+            shapes_map[mode] = se
         sp = stop_parents(os.path.join(a.build_dir, mode + '.sqlite'), mode, sv)
         with open(os.path.join(a.build_dir, 'stop_parents.%s.json' % mode), 'w',
                   encoding='utf-8') as f:
@@ -178,11 +211,16 @@ def main():
         'stop_parents_url_template': base + '/stop_parents.{mode}.json',
         'channel': a.channel,
     }
+    # M6 §6.1：**新顶层键**，不放进 feeds —— 老 app 的 ManifestRepository 把 feeds 的每个键当 mode 比对。
+    # 没有任何 shapes 文件时整个键不写（与 M4 的 manifest 逐字相同）。
+    if shapes_map:
+        manifest['shapes'] = shapes_map
     with open(os.path.join(a.build_dir, 'manifest.json'), 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, indent=1)
     with open(os.path.join(a.build_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(build_config(a.min_app_version), f, ensure_ascii=False, indent=1)
-    print('manifest.json  feeds=%s channel=%s' % (','.join(feeds), a.channel), flush=True)
+    print('manifest.json  feeds=%s shapes=%s channel=%s'
+          % (','.join(feeds), ','.join(shapes_map) or '-', a.channel), flush=True)
 
     # 非营运 headsign 词表：与 fixtures/non_revenue_headsigns.json 同一份真相（build_db 的常量），
     # 文件名也一样。客户端拿真库时按 stop_parents 同样的 base URL 取它。

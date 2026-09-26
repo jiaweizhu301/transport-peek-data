@@ -57,6 +57,13 @@ jobs:
       - name: D4 「今天」口径（悉尼日 vs UTC 日）
         run: python scripts/tz_check.py
 
+      - name: D4 shapes 契约 / 线路图校验器 / 区表自检
+        run: |
+          python scripts/shapes.py
+          python scripts/build_shapes.py --selftest
+          python scripts/check_schematic.py --selftest
+          python scripts/suburbs.py --selftest
+
       # tag 用**悉尼当地日**：库里的 calendar 是悉尼运营日，cron 又在悉尼 02:30 跑，
       # 用 UTC 会让 tag 比库的 calendar_start 早一天（见 build_db.service_today 的注释）。
       - name: 定 tag
@@ -71,9 +78,20 @@ jobs:
       - name: D2 裁剪建库
         run: python scripts/build_db.py build/gtfs build --days "$DAYS"
 
+      - name: D2 公交区表（F5；校验派生文件 sha → 射线法 → 两张表 → 重新 gzip）
+        run: python scripts/suburbs.py build geo/sal2021_nsw.json.gz
+
+      - name: D2 shapes（按 mode，DP 5 m）
+        run: python scripts/build_shapes.py build/gtfs build
+
       # D4：不变量。任一失败 -> 后续步骤全跳过 -> 不发 Release（下面的 notify 会告警）
       - name: D4 不变量
         run: python scripts/invariants.py build
+
+      # M6 §6.2：只告警，不阻塞发版。告警写进 Job Summary，agent 改主仓 JSON 随下一个 APK 发
+      - name: D4 线路图 JSON 对照最新时刻表（只告警）
+        continue-on-error: true
+        run: python scripts/check_schematic.py schematic/sydney-rail.json build
 
       - name: D3 生成 manifest / config / stop_parents
         run: |
