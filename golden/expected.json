@@ -14,6 +14,7 @@
    "orphan_stop_time_rows": 0,
    "pattern_stops": 114,
    "platform_code_rows": 42,
+   "renamed_nonrevenue_headsign_trips": 0,
    "routes": 1,
    "static_version": "20260907-0000",
    "stop_patterns": 6,
@@ -132,26 +133,27 @@
  },
  "sydneytrains": {
   "build_stats": {
-   "calendar": 32,
+   "calendar": 35,
    "calendar_dates": 0,
    "calendar_days": 16,
    "calendar_end": 20260922,
    "calendar_start": 20260907,
-   "direction_groups": 49,
-   "dropped_nonrevenue_headsign_trips": 30,
+   "direction_groups": 53,
+   "dropped_nonrevenue_headsign_trips": 4,
    "dropped_nonrevenue_trips": 1,
-   "dropped_passthrough_rows": 698,
+   "dropped_passthrough_rows": 929,
    "mode": "sydneytrains",
    "orphan_stop_time_rows": 0,
-   "pattern_stops": 1900,
+   "pattern_stops": 2041,
    "platform_code_rows": 469,
-   "routes": 28,
+   "renamed_nonrevenue_headsign_trips": 12,
+   "routes": 30,
    "static_version": "20260907-0000",
-   "stop_patterns": 106,
-   "stop_times": 3115,
+   "stop_patterns": 115,
+   "stop_times": 3301,
    "stops": 625,
    "transfers": 0,
-   "trips": 179
+   "trips": 191
   },
   "platform_code_rows": 469,
   "sample_departures": [
@@ -220,32 +222,32 @@
   ],
   "tables": {
    "calendar": {
-    "rows": 32,
-    "sha256": "57df639f736db4bcd797d5c93048d2b70367974b0b524d30e03418e909e52653"
+    "rows": 35,
+    "sha256": "f9c4d3b2f933356fc425fe504be55e586ce68dc0bcbbd247af397ad17c3fb177"
    },
    "calendar_dates": {
     "rows": 0,
     "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
    },
    "direction_groups": {
-    "rows": 49,
-    "sha256": "3c4a20160b43a6c3766ba2fbe99d20c0fb7e701d9d19bf56dbd170b8de046fd8"
+    "rows": 53,
+    "sha256": "bcd9b604c64458913a16117353b28bf77d5bbf85a91af00cc0081461dc02ec33"
    },
    "meta": {
     "rows": 1,
     "sha256": "5aa0450e5a49280aa3e959c121fb5c55bf64ba786b04eda9cec8f7e029e1f8c0"
    },
    "pattern_stops": {
-    "rows": 1900,
-    "sha256": "36e4d6cb4f7975814b773d360969707757cb44d46671e1336c0d35e43ef6016a"
+    "rows": 2041,
+    "sha256": "06a4567f9d2991eb1be4b38e5a317ffcd4c89ea94dedc719683d7c537949a6dc"
    },
    "routes": {
-    "rows": 28,
-    "sha256": "d0bff78b08d8b15b5ed286479f1ddca4b200a5484c48deef136e599375330500"
+    "rows": 30,
+    "sha256": "6a322afe1b3ec98e43d8aa30c56c6885736b40865435f6c826acea3977230bbc"
    },
    "stop_patterns": {
-    "rows": 106,
-    "sha256": "ba94acb5313f59152877dc32c1387989cd811b846737a69d34aae7d39fc2bd41"
+    "rows": 115,
+    "sha256": "b04a5fceb21f3fe79c11f6209e9c504290a186dcd48f99a4395afeae5d3b9a2d"
    },
    "stops": {
     "rows": 625,
@@ -256,8 +258,8 @@
     "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
    },
    "trips": {
-    "rows": 179,
-    "sha256": "3f7fd376e559f7f1b1bac46d2405f8521e1c0cf83cfda786e0a764843cf031a4"
+    "rows": 191,
+    "sha256": "505c718a4548e7445763a2d4b302c3a758c4eca5d30a1cb83cbb54f9395fe2f0"
    }
   }
  }

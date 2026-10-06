@@ -51,7 +51,7 @@ jobs:
 
       # D4：黄金样本先跑。冻结输入 -> 期望输出，与上游无关，挂了说明是代码回归。
       - name: D4 黄金样本
-        run: python scripts/golden_check.py
+        run: python scripts/golden_check.py && python scripts/nonrevenue_check.py
 
       # D4：「今天」口径回归。2026-09-11~09-14 定时运行连挂 4 天就是栽在这里。
       - name: D4 「今天」口径（悉尼日 vs UTC 日）

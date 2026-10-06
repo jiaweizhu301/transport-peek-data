@@ -90,9 +90,15 @@ def stop_id_order(sid):
 #   而不是调车。当成非营运会**删掉真实的发车**（出发列表里也一起消失），代价比「方向列表多一行难看的字」大。
 #   「Special 不该当目的地显示」是展示层的问题，留给 UI/文案处理，不在管线删数据。
 #
-# 匹配规则：**大小写不敏感 + 折叠空白 + 子串包含**（见 is_non_revenue_headsign）。整条 trip 丢弃，
-# 它的 stop_times 不入库，因此变空的 direction_groups / stop_patterns 也不会被写出（下面的 live_*
-# 集合过滤），零悬挂。
+# 匹配规则：**大小写不敏感 + 折叠空白 + 子串包含**（见 is_non_revenue_headsign）。
+#
+# 2026-10-06 修正处置（原来是「命中就整条丢」）：命中的 trip 若**一站都不让上**（pickup_type 全非 0）
+# 照旧整条丢；若**至少一站可上客**则保留，headsign 改写成末个可下客站名（revenue_headsign_from_stops，
+# 例：'Empty Train' -> 'Hornsby'），各站 pickup/drop_off 原样入库，不可上客的站在出发列表里仍不可上。
+# 起因：TfNSW 把每工作日约 179 趟真载客的全站车（T9 Strathfield 12:38 -> Hornsby 等，TfNSW 行程
+# 规划照常给出）也标成 'Empty Train'，原规则把它们从出发列表/规划里全删了（约当天 7%）。
+# 改写后 headsign 是真实站名，库里仍然**不会**出现任何非营运 headsign（invariants 第 8 条、客户端
+# 读 non_revenue_headsigns.json 的不变量都照旧成立）。下面 3,880 那个数就是这批车的上限。
 #
 # 为什么是**子串包含**而不是全等：客户端（core-gtfs 的全库不变量测试）与管线必须用同一套语义，
 # 而客户端要挡的是「任何来源的库」，子串更严。2026-09-07 实测：在 5 个 feed 的全量 headsign 上
@@ -189,6 +195,23 @@ def is_non_revenue_headsign(headsign):
     """
     h = normalize_headsign(headsign)
     return any(w in h for w in NON_REVENUE_HEADSIGNS)
+
+
+def revenue_headsign_from_stops(rows, stops):
+    """非营运 headsign 但实际载客的 trip：用**末个可下客站**（drop_off_type != 1）的站名当 headsign。
+
+    rows 已按 stop_sequence 排好（flush 的行形状：r[2]=stop_id, r[6]=drop_off_type）。
+    站名取父站（没有就取自己），去掉尾巴 ' Station' —— 与上游真实 headsign 的写法一致
+    （stops.txt 'Hornsby Station' ↔ trip_headsign 'Hornsby'）。没有可下客站就退回末站。
+    """
+    alight = [r for r in rows if r[6] != 1] or rows
+    sid = alight[-1][2]
+    s = stops[sid]
+    if s[6] and s[6] in stops:
+        s = stops[s[6]]
+    name = ' '.join((s[1] or '').split())
+    name = re.sub(r'\s+Station$', '', name) or name
+    return name or 'unknown'
 
 
 def non_revenue_headsigns_doc():
@@ -497,24 +520,36 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
     dg_id = {}
     dgs = []
     trips = {}
-    dropped_nonrevenue_headsign = 0
+    dropped_nonrevenue_headsign = [0]
+    renamed_nonrevenue_headsign = [0]
+    pending_nonrevenue = set()
+
+    def dg_for(route_id, hs):
+        k = (route_id, hs)
+        if k not in dg_id:
+            dg_id[k] = len(dgs) + 1
+            dgs.append((dg_id[k], route_id, direction_key_of(hs), hs, hs))
+        return dg_id[k]
+
     for t in f.rows('trips.txt'):
         if t['route_id'] not in keep_routes or t['service_id'] not in keep_services:
             continue
         hs = (t.get('trip_headsign') or '').strip() or 'unknown'
         # 非营运班次（'Empty Train' 等，见 NON_REVENUE_HEADSIGNS）：headsign 说明它不载客。
         # 在这里丢掉 -> 既不会建 direction_group，stop_times 也进不来（下面按 trips 过滤），零悬挂。
-        if is_non_revenue_headsign(hs):
-            dropped_nonrevenue_headsign += 1
-            continue
-        k = (t['route_id'], hs)
-        if k not in dg_id:
-            dg_id[k] = len(dgs) + 1
-            dgs.append((dg_id[k], t['route_id'], direction_key_of(hs), hs, hs))
+        # 2026-10-06 改：**不在这里直接丢**。TfNSW 把一批真载客的全站车（T9 Strathfield 12:38 等，
+        # 每个工作日约 179 趟、平均 14 站 pickup_type=0，TfNSW 行程规划也当营运车给）的 headsign
+        # 也写成 'Empty Train'。先挂起（headsign / direction_group 待定），等 flush() 看到停站：
+        # 有站可上客 -> 保留，headsign 改写成末个可下客站名（见 revenue_headsign_from_stops）；
+        # 一站都不让上 -> 照旧整条丢（计入 dropped_nonrevenue_headsign）。
+        pending = is_non_revenue_headsign(hs)
+        if pending:
+            pending_nonrevenue.add(t['trip_id'])
         di = t.get('direction_id')
         # 末三位 pattern_id / start_secs / duration_secs / offsets 由 flush() 填
         trips[t['trip_id']] = [t['trip_id'], t['route_id'], t['service_id'], hs,
-                               int(di) if di not in (None, '') else None, dg_id[k],
+                               int(di) if di not in (None, '') else None,
+                               None if pending else dg_for(t['route_id'], hs),
                                None, None, None, None]
 
     # ---- stops（丢出入口/通用节点；解析 platform_code）
@@ -569,10 +604,18 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
             return
         # 非营运班次：整条 trip 没有任何一站可上客（RTTA_REV/RTTA_DEF 空车与调车）-> 整条丢
         if not any(r[5] == 0 for r in rows):
-            dropped_nonrevenue[0] += 1
+            if tid in pending_nonrevenue:
+                dropped_nonrevenue_headsign[0] += 1
+            else:
+                dropped_nonrevenue[0] += 1
             return
         rows.sort(key=lambda r: r[1])
         route_id = trips[tid][1]
+        if tid in pending_nonrevenue:
+            hs = revenue_headsign_from_stops(rows, stops)
+            trips[tid][3] = hs
+            trips[tid][5] = dg_for(route_id, hs)
+            renamed_nonrevenue_headsign[0] += 1
         # 几何键：停站序列 + 上下客标志，**不含时刻**
         key = (route_id, tuple((r[1], r[2], r[5], r[6]) for r in rows))
         pid = pattern_id.get(key)
@@ -734,7 +777,8 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
                 orphan_stop_time_rows=orphan_stop,
                 dropped_passthrough_rows=dropped_passthrough,
                 dropped_nonrevenue_trips=dropped_nonrevenue[0],
-                dropped_nonrevenue_headsign_trips=dropped_nonrevenue_headsign,
+                dropped_nonrevenue_headsign_trips=dropped_nonrevenue_headsign[0],
+                renamed_nonrevenue_headsign_trips=renamed_nonrevenue_headsign[0],
                 sqlite_bytes=os.path.getsize(out_path), **counts)
 
 

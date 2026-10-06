@@ -12,6 +12,7 @@ DAYS="${2:-}"
 TAG="$(TZ=Australia/Sydney date +%Y-%m-%d)"   # 悉尼当地日，与 daily.yml 的 `定 tag` 一致
 
 python "$HERE/golden_check.py"
+python "$HERE/nonrevenue_check.py"
 python "$HERE/tz_check.py"
 python "$HERE/shapes.py"
 python "$HERE/check_schematic.py" --selftest
