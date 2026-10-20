@@ -18,6 +18,7 @@ python "$HERE/tz_check.py"
 python "$HERE/shapes.py"
 python "$HERE/check_schematic.py" --selftest
 python "$HERE/build_shapes.py" --selftest
+python "$HERE/stop_ops.py" --selftest
 python "$HERE/suburbs.py" --selftest
 python "$HERE/fetch_gtfs.py"   "$OUT/gtfs"
 python "$HERE/build_db.py"     "$OUT/gtfs" "$OUT" --days "$DAYS"

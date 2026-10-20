@@ -207,7 +207,10 @@ def main():
         print('%s  %d 个父站  %d 字节' % (os.path.basename(vp), len(vs['stops']), os.path.getsize(vp)),
               flush=True)
         if mode == stop_ops.STOP_OPS_MODE:
-            op, payload, n = stop_ops.write_stop_ops(a.build_dir, db_path)
+            op, payload, n, skipped = stop_ops.write_stop_ops(a.build_dir, db_path)
+            if skipped:
+                print('WARN stop_ops 跳过 %d 个非数字站号（Worker 对它们取整份 feed）：%s'
+                      % (len(skipped), ', '.join(skipped[:5])), flush=True)
             star = sum(1 for s in vs['stops'] if stop_ops.lookup(payload, s) == '*')
             print('%s  stops=%d runs=%d sets=%d  取整份 feed 的站 %d（%.1f%%）  %d 字节'
                   % (os.path.basename(op), n, len(payload['runs'].split(';')), len(payload['sets']),
