@@ -76,16 +76,21 @@ def _code(v):
     return '*' if '*' in v else ','.join(sorted(v))
 
 
+def is_numeric(s):
+    """可编码的站号：ASCII 纯数字且无前导零（'²' 让 int() 崩，'0123' 与 int 往返对不上）。"""
+    return s.isascii() and s.isdigit() and str(int(s)) == s
+
+
 def non_numeric(m):
     """编码不了的站号（非纯数字）。不编进 runs：busops.js 对它们一律返回 null = 取整份 feed，
     与 '*' 同一结局 —— 宁可多花 CPU，也不让一个怪站号挡住全部 mode 的 Release。"""
-    return sorted(s for s in m if not s.isdigit())
+    return sorted(s for s in m if not is_numeric(s))
 
 
 def encode(m, static_version):
     """-> (payload, 编进去的站数)。payload 键序与 .gen.js 逐字相同：static_version, min, max, sets, runs。
     非纯数字的站号跳过（见 non_numeric）；全是纯数字时与原 gen-stop-ops.py 逐字节相同。"""
-    m = {s: v for s, v in m.items() if s.isdigit()}
+    m = {s: v for s, v in m.items() if is_numeric(s)}
     if not m:
         raise ValueError('no numeric bus stop_id at all')
     sets = ['*']
@@ -123,7 +128,7 @@ def build(db_path):
 
 def lookup(payload, stop_id):
     """与 busops.js opsOfStop 同一算法：-> 集合字符串（'*' = 取整份 feed）。"""
-    if not str(stop_id).isdigit():
+    if not is_numeric(str(stop_id)):
         return '*'
     n = int(stop_id)
     if n < payload['min'] or n > payload['max']:
@@ -233,7 +238,7 @@ def stop_ops_errors(build_dir, db_path, static_version):
     if doc != want:
         errs.append('%s 与从库重算的结果不同（被手改过，或生成器与校验器漂移）' % STOP_OPS_FILENAME)
     # 非数字站号按设计解码成 '*'（取整份 feed），其余必须解码回自己的集合
-    bad = [s for s, v in m.items() if lookup(doc, s) != (_code(v) if s.isdigit() else '*')]
+    bad = [s for s, v in m.items() if lookup(doc, s) != (_code(v) if is_numeric(s) else '*')]
     if bad:
         errs.append('%s: %d 个有车停的站解码不回自己的运营商集合：%s'
                     % (STOP_OPS_FILENAME, len(bad), ', '.join(sorted(bad)[:5])))
@@ -290,6 +295,12 @@ def selftest():
         assert encode(mixed, 'x') == encode(m, 'x'), encode(mixed, 'x')
         assert lookup(encode(mixed, 'x')[0], '20A') == '*'
         n += 1
+        # 非 ASCII 数字（int('²') 会崩）与前导零（str(int) 往返不等）同样跳过、解码为 '*'
+        for odd in ('²', '0123'):
+            mo = dict(m, **{odd: {'GSBC001'}})
+            assert non_numeric(mo) == [odd] and encode(mo, 'x') == encode(m, 'x'), odd
+            assert lookup(encode(mo, 'x')[0], odd) == '*', odd
+            n += 1
         try:
             encode({'20A': {'*'}}, 'x')
             raise AssertionError('all non-numeric must raise')
