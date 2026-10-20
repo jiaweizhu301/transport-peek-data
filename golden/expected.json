@@ -3,13 +3,14 @@
   "build_stats": {
    "calendar": 5,
    "calendar_dates": 0,
-   "calendar_days": 116,
+   "calendar_days": 117,
    "calendar_end": 20261231,
-   "calendar_start": 20260907,
+   "calendar_start": 20260906,
    "direction_groups": 3,
    "dropped_nonrevenue_headsign_trips": 0,
    "dropped_nonrevenue_trips": 0,
    "dropped_passthrough_rows": 0,
+   "dropped_unrideable_trips": 0,
    "mode": "metro",
    "orphan_stop_time_rows": 0,
    "pattern_stops": 114,
@@ -21,6 +22,7 @@
    "stop_times": 4251,
    "stops": 63,
    "transfers": 0,
+   "tripfinal_pickup_cleared": 0,
    "trips": 203
   },
   "platform_code_rows": 42,
@@ -91,7 +93,7 @@
   "tables": {
    "calendar": {
     "rows": 5,
-    "sha256": "8046a5a9dc909c7e3a0060a2d8ca672276246eb5ef791b25491b00e8b4b83df5"
+    "sha256": "f435dddeb09ad255ddef76353dbf8b40146787aa705d87f942691d5654259c1a"
    },
    "calendar_dates": {
     "rows": 0,
@@ -103,7 +105,7 @@
    },
    "meta": {
     "rows": 1,
-    "sha256": "4524f0b73e7c57361b9c3b39b89921dac0d1e165b08f98599110af38e676c4df"
+    "sha256": "379ace0f454eae85e609c06bc0ed9976e12330816455d3fd1e23e16544568580"
    },
    "pattern_stops": {
     "rows": 114,
@@ -142,6 +144,7 @@
    "dropped_nonrevenue_headsign_trips": 4,
    "dropped_nonrevenue_trips": 1,
    "dropped_passthrough_rows": 929,
+   "dropped_unrideable_trips": 0,
    "mode": "sydneytrains",
    "orphan_stop_time_rows": 0,
    "pattern_stops": 2041,
@@ -153,6 +156,7 @@
    "stop_times": 3301,
    "stops": 625,
    "transfers": 0,
+   "tripfinal_pickup_cleared": 0,
    "trips": 191
   },
   "platform_code_rows": 469,

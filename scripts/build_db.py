@@ -493,7 +493,12 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
     ends = [ymd(c['end_date']) for c in cal_rows] + \
            [ymd(c['date']) for c in cd_rows if c['exception_type'] == '1']
     feed_lo, feed_hi = (min(starts) if starts else 0), (max(ends) if ends else 0)
-    lo_d = max(feed_lo, int(today.strftime('%Y%m%d')))
+    # XCO-09（M7.5）：窗口从**昨天（D−1）**起算，不是今天。cron 在悉尼 02:30 跑（GitHub 常晚 3–6 h），
+    # 那一刻 D−1 运营日还没结束：24:00 以后的车（公交最晚 29:42，火车 27:14）挂在 D−1 的 service 上，
+    # 客户端本地 04:00 前也按 D−1 运营日查（schema.sql 末行）。从 D 起算 = 发版当晚这批车整段消失。
+    # horizon_days 不变（火车 16 天 = D−1 … D+14，体积不变，invariants 的「距今 ≥ 14 天」照样成立）。
+    # feed 本身回溯不到 D−1 时退回 feed 起点（invariants 的 D−1 覆盖计数会如实报出来）。
+    lo_d = max(feed_lo, int((today - datetime.timedelta(days=1)).strftime('%Y%m%d')))
     days = []
     d0 = datetime.date(lo_d // 10000, lo_d // 100 % 100, lo_d % 100)
     for i in range(horizon_days):

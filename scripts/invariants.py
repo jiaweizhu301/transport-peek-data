@@ -6,7 +6,8 @@
 
 不变量（M1-D4 原文四条 + 契约 2 的硬约束）：
   1. 行数区间：每模式每表的行数落在预设区间内（上游突然缩水/暴涨都拦下来）
-  2. calendar 覆盖 >= 14 天，且窗口必须从「今天」起算（挡上游 feed 停更）
+  2. calendar 覆盖 >= 14 天，窗口起点不晚于「今天」且距今仍 >= 14 天（挡上游 feed 停更；
+     XCO-09 起窗口从昨天 D−1 起算，见 build_db）
   3. 无孤儿停站（pattern_stops.stop_id / trips.pattern_id 悬空）
   4. 每父站 >= 1 子站
   5. schema 硬约束：user_version=1 / journal_mode=delete / page_size=4096 /
@@ -21,6 +22,9 @@
      否则终点站会把「到站的车」列成出发（Liverpool Stand A 前 40 条 33 条幻影）。OK 时也打印计数。
  11. 每个 pattern 都坐得了（M7.5 R5A-09）：至少一站可上客（pickup_type = 0），且它**后面**还有一站可下客
      （drop_off_type <> 1）。否则它只是一个「方向」幽灵（1 站的 RTTA_REV 'Special' 让 Katoomba 能被选中）。
+ 12. GAP-05 数据形状四计数（M7.5，shape_counts()）：末站可上客（= 第 10 条，硬）/ 同一父站两次可上客的
+     环线 pattern（CO-10，City Circle 过 Central 两次）/ 28:00 以后才发车的 trip（CO-01）/ D−1 覆盖
+     （XCO-09：窗口从昨天起算）。后三个**只打印不判失败**：它们是「修好的路径多久触发一次」的观测量。
 """
 import datetime as _dt
 import json
@@ -92,6 +96,60 @@ UNRIDEABLE_SQL = (
     'max(CASE WHEN drop_off_type <> 1 THEN stop_sequence END) AS alight '
     'FROM pattern_stops GROUP BY pattern_id) '
     'WHERE board IS NULL OR alight IS NULL OR alight <= board')
+
+
+# 12. 环线：同一个父站（无父站则站自身）在一个 pattern 里 >= 2 次可上客。按父站算，因为 City Circle
+#     两次过 Central 走的是不同站台（不同 stop_id），而 Worker / 客户端的匹配键是父站（CO-10）。
+LOOP_PATTERNS_SQL = (
+    'SELECT pattern_id FROM pattern_stops ps JOIN stops s ON s.stop_id = ps.stop_id '
+    'WHERE ps.pickup_type = 0 GROUP BY pattern_id, coalesce(s.parent_station, s.stop_id) '
+    'HAVING count(*) >= 2')
+
+LATE_START_SECS = 28 * 3600          # 28:00 = 次日 04:00，客户端已切到下一运营日
+DAY_SECS = 24 * 3600
+WEEKDAY_COLS = ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')
+
+
+def ymd_int(d):
+    return int(d.strftime('%Y%m%d'))
+
+
+def services_on(db, day):
+    """day（date）当天运行的 service_id 集合：calendar 星期位 + 日期区间，再叠 calendar_dates 例外。"""
+    v = ymd_int(day)
+    col = WEEKDAY_COLS[day.weekday()]
+    on = {r[0] for r in db.execute(
+        'SELECT service_id FROM calendar WHERE %s = 1 AND start_date <= ? AND end_date >= ?' % col, (v, v))}
+    for sid, ex in db.execute('SELECT service_id, exception_type FROM calendar_dates WHERE date = ?', (v,)):
+        if ex == 1:
+            on.add(sid)
+        elif ex == 2:
+            on.discard(sid)
+    return on
+
+
+def shape_counts(db, today):
+    """GAP-05 的四个计数（today = 悉尼当地日 date）。db 是已打开的 sqlite3 连接。"""
+    loops = [r[0] for r in db.execute(LOOP_PATTERNS_SQL)]
+    loop_set = set(loops)
+    loop_trips = 0
+    if loop_set:
+        loop_trips = sum(1 for (pid,) in db.execute('SELECT pattern_id FROM trips') if pid in loop_set)
+    d1 = today - _dt.timedelta(days=1)
+    cal_lo = db.execute('SELECT calendar_start FROM meta').fetchone()[0]
+    covered = cal_lo <= ymd_int(d1)
+    d1_late = 0
+    if covered:
+        svc = services_on(db, d1)
+        d1_late = sum(1 for sid, end in db.execute(
+            'SELECT service_id, start_secs + duration_secs FROM trips') if end >= DAY_SECS and sid in svc)
+    q1 = lambda s, *a: db.execute(s, a).fetchone()[0]
+    return dict(
+        tripfinal_pickup0=q1(TRIPFINAL_PICKUP0_SQL),
+        loop_patterns=len(loop_set), loop_trips=loop_trips,
+        start_ge_28=q1('SELECT count(*) FROM trips WHERE start_secs >= ?', LATE_START_SECS),
+        end_ge_28=q1('SELECT count(*) FROM trips WHERE start_secs + duration_secs >= ?', LATE_START_SECS),
+        d1=ymd_int(d1), calendar_start=cal_lo, d1_covered=covered, d1_late_trips=d1_late)
 
 
 def days_between(lo, hi):
@@ -318,6 +376,14 @@ def check(db_path, mode):
     if n:
         fails.append('末站可上客（trip-final pickup_type = 0）的 pattern %d 个（应为 0，CO-19；'
                      'build_db.flush() 该把末站 pickup_type 改成 1）' % n)
+
+    # 12. GAP-05 四计数（只打印；末站可上客的硬规则在第 10 条）
+    c = shape_counts(db, service_today())
+    print('     %s: GAP-05 计数 | 末站可上客 %d | 环线（同一父站两次可上客）pattern %d / trip %d | '
+          '28:00 后发车 trip %d（28:00 后到终点 %d）| D−1=%d %s（calendar_start=%d，D−1 跑过 24:00 的 trip %d）'
+          % (mode, c['tripfinal_pickup0'], c['loop_patterns'], c['loop_trips'], c['start_ge_28'],
+             c['end_ge_28'], c['d1'], '已覆盖' if c['d1_covered'] else '未覆盖',
+             c['calendar_start'], c['d1_late_trips']))
 
     # 11. 坐不了的 pattern（R5A-09）：硬规则
     n = q1(UNRIDEABLE_SQL)
