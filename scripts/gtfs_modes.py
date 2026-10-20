@@ -13,6 +13,10 @@
     而 L2/L3/LX 在 `/lightrail/cbdandsoutheast`（1,058,516 B、106,014 行）。
     照聚合端点建库会得到一个**只有 L1** 的轻轨库 —— 200、内容合法、不变量全过、golden 不红，
     用户只是搜不到 L2/L3。比 404 坏，故一个 mode 允许配多个 feed（见 `feeds_for`）。
+  * **Parramatta 轻轨 L4 在第三个子 feed** `/lightrail/parramatta`（M7.5 R5A-12，2026-10-20 实测：200，
+    321,704 B，agency PLR，1 route L4 `ISD-17-6720_L4` route_type 900，48 stops = 16 父站 + 32 站台，
+    2,713 trips，37,729 行 stop_times；与另两个子 feed 的 route/stop/trip/service/agency/shape id 零交集）。
+    此前 L4 整条线漏收：16 个站搜不到。只收时刻表；L4 实时（第三个 LR 实时子 feed）是 M7.5 B2 的事。
 """
 
 API_BASE = 'https://api.transport.nsw.gov.au'
@@ -31,7 +35,7 @@ MIN_DAYS = 14
 
 # 一个客户端 mode 可以由**多个**上游静态 feed 合成（lightrail 就是）。
 # 写 'feeds' 的按列表取，写 'path' 的按单个取 —— 两种写法由 feeds_for() 统一。
-# 合并前已实测两个 lightrail 子 feed 的五个 id 空间**零交集**
+# 合并前已实测三个 lightrail 子 feed 的五个 id 空间**两两零交集**（innerwest/cbdandsoutheast 2026-09-22，parramatta 2026-10-20）
 # （routes/stops/trips/calendar/agency），所以直接拼接，不用重编 id。
 # 若将来某个 mode 的子 feed 出现 id 冲突，必须在这里显式加前缀，不许默默 INSERT OR IGNORE。
 MODES = {
@@ -54,7 +58,8 @@ MODES = {
     'lightrail': {
         # 不要写成 '/v1/gtfs/schedule/lightrail' —— 那个端点只是 innerwest 的别名，见模块头
         'feeds': ['/v1/gtfs/schedule/lightrail/innerwest',
-                  '/v1/gtfs/schedule/lightrail/cbdandsoutheast'],
+                  '/v1/gtfs/schedule/lightrail/cbdandsoutheast',
+                  '/v1/gtfs/schedule/lightrail/parramatta'],      # L4（R5A-12），见模块头
         'keep_agencies': None, 'route_type': 0,
         'self_parent': False,
         # newcastle（/v1/gtfs/schedule/lightrail/newcastle，80,244 B）存在但不在悉尼，M4 不收

@@ -24,6 +24,7 @@ import zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import build_db  # noqa: E402
+import gtfs_modes  # noqa: E402
 import invariants  # noqa: E402
 
 TODAY = datetime.date(2026, 10, 13)
@@ -151,7 +152,36 @@ def run():
         db.close()
         fails = [f for f in invariants.check(out, 'sydneytrains') if '坐不了' in f]
         assert fails, 'invariants must fail on an unrideable pattern'
+    check_lightrail_feeds()
     print('shape_check OK')
+
+
+def _routes_zip(path, rows):
+    with zipfile.ZipFile(path, 'w') as z:
+        z.writestr('routes.txt', _csv(['route_id', 'agency_id', 'route_short_name', 'route_type'], rows))
+
+
+def check_lightrail_feeds():
+    """R5A-12（2026-10-20）：lightrail = innerwest (L1) + cbdandsoutheast (L2/L3/LX) + parramatta (L4)。
+    L4 漏了一整条线：它不在 MODES 里，库里就没有 16 个站，用户搜「Ngara」什么也搜不到。"""
+    feeds = gtfs_modes.feeds_for('lightrail')
+    assert feeds == ['/v1/gtfs/schedule/lightrail/innerwest',
+                     '/v1/gtfs/schedule/lightrail/cbdandsoutheast',
+                     '/v1/gtfs/schedule/lightrail/parramatta'], feeds
+    # 第三个子 feed 与前两个撞 id -> 必须响亮失败（不许后写覆盖前写让一条线消失）
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        zs = [os.path.join(td, '%d.zip' % i) for i in range(3)]
+        _routes_zip(zs[0], [('IWL', 'LR', 'L1', '900')])
+        _routes_zip(zs[1], [('CSE', 'SLR', 'L2', '900')])
+        _routes_zip(zs[2], [('PLR', 'PLR', 'L4', '900')])
+        build_db.Feed(zs).check_no_id_collisions()
+        _routes_zip(zs[2], [('PLR', 'PLR', 'L4', '900'), ('IWL', 'PLR', 'L4x', '900')])
+        try:
+            build_db.Feed(zs).check_no_id_collisions()
+        except SystemExit as e:
+            assert '子 feed 0 与 2' in str(e), e
+        else:
+            raise AssertionError('route_id collision between sub-feed 0 and 2 must fail')
 
 
 if __name__ == '__main__':

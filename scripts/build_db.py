@@ -401,8 +401,8 @@ def ymd(s):
 class Feed(object):
     """按需读**一个或多个** zip 里的某个 txt，按给定顺序依次产出。
 
-    多 zip 是 lightrail 逼出来的：一个客户端 mode 由两个上游 feed 合成
-    （innerwest + cbdandsoutheast，见 gtfs_modes 模块头）。不存在的 txt 返回空迭代
+    多 zip 是 lightrail 逼出来的：一个客户端 mode 由三个上游 feed 合成
+    （innerwest + cbdandsoutheast + parramatta，见 gtfs_modes 模块头）。不存在的 txt 返回空迭代
     （上游 sydneytrains 无 transfers/calendar_dates）。
     """
 
@@ -423,7 +423,7 @@ class Feed(object):
         """多 feed 合并前检查 id 空间不重叠，**冲突就失败退出**。
 
         2026-09-22 实测两个 lightrail 子 feed 的 routes/stops/trips/calendar/agency
-        五个 id 空间零交集，所以可以直接拼接、不用重编 id。但**零交集是今天的事实，
+        五个 id 空间零交集（2026-10-20 加入第三个 parramatta，仍两两零交集），所以可以直接拼接、不用重编 id。但**零交集是今天的事实，
         不是 TfNSW 的承诺** —— 静默的后写覆盖前写会让一条线路凭空消失，
         与「聚合端点其实是别名」是同一类失败形态，必须响亮。
         """
@@ -836,7 +836,7 @@ def main():
         vf = os.path.join(a.gtfs_dir, mode + '.version')
         sv = open(vf, encoding='utf-8').read().strip() if os.path.exists(vf) else \
             datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d-%H%M')
-        # 多 feed 的 mode 落成 <mode>.0.zip / <mode>.1.zip（见 fetch_gtfs.fetch）
+        # 多 feed 的 mode 落成 <mode>.0.zip / <mode>.1.zip / …（lightrail 三个，见 fetch_gtfs.fetch）
         n = len(feeds_for(mode))
         zips = ([os.path.join(a.gtfs_dir, '%s.%d.zip' % (mode, i)) for i in range(n)]
                 if n > 1 else [os.path.join(a.gtfs_dir, mode + '.zip')])

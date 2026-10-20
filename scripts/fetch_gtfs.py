@@ -36,7 +36,7 @@ def static_version(last_modified):
 
 def fetch(mode, out_dir, key):
     """下该 mode 的全部上游静态 feed。多 feed 的 mode（lightrail）落成
-    `<mode>.0.zip / <mode>.1.zip`，并把各自的 Last-Modified 取**最新**那个当 static_version。
+    `<mode>.0.zip / <mode>.1.zip / <mode>.2.zip`（按 feeds_for 顺序），并把各自的 Last-Modified 取**最新**那个当 static_version。
     取最新而不是拼接：static_version 要塞进 manifest 的 pattern，且客户端只用它做「变没变」的比对。"""
     feeds = feeds_for(mode)
     if len(feeds) > 1:

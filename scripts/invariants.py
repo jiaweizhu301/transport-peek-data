@@ -61,13 +61,13 @@ RANGES = {
         'trips': (50000, 150000), 'pattern_stops': (100000, 500000),
         'stop_patterns': (2000, 15000), 'calendar': (100, 800),
     },
-    # ⚠ lightrail 的 routes 下界是**刻意**卡在 4 的（L1/L2/L3/LX）。
-    # 它守的不是「数据质量」，是「**两个子 feed 都进来了**」：
+    # ⚠ lightrail 的 routes 下界是**刻意**卡在 5 的（L1/L2/L3/LX + L4，M7.5 R5A-12 从 4 抬到 5）。
+    # 它守的不是「数据质量」，是「**三个子 feed 都进来了**」（少了 parramatta 就只剩 4 条）：
     # /v1/gtfs/schedule/lightrail 这个「聚合」端点其实是 innerwest 的别名，只有 L1。
     # 照它建库会得到一个 200、内容合法、其余不变量全过、golden 也不红的**缺三条线**的库。
     # 这条下界是目前唯一能让那种错变红的东西 —— 别为了「宽松一点」把它调低。
     'lightrail': {
-        'stops': (60, 400), 'routes': (4, 20), 'direction_groups': (4, 100),
+        'stops': (60, 400), 'routes': (5, 20), 'direction_groups': (4, 100),
         'trips': (3000, 20000), 'pattern_stops': (100, 3000),
         'stop_patterns': (10, 300), 'calendar': (5, 100),
     },
