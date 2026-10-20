@@ -16,6 +16,7 @@ python "$HERE/nonrevenue_check.py"
 python "$HERE/shape_check.py"
 python "$HERE/tz_check.py"
 python "$HERE/supply_chain_check.py"
+python "$HERE/pages_check.py"
 python "$HERE/shapes.py"
 python "$HERE/check_schematic.py" --selftest
 python "$HERE/build_shapes.py" --selftest

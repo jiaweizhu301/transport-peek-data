@@ -24,11 +24,13 @@
 <body>
 <main>
   <h1>TransportPeek — Privacy Policy</h1>
-  <p class="sub">Last updated: 2026-09-22</p>
+  <p class="sub">Last updated: 2026-10-20</p>
 
   <h2>Summary</h2>
   <p>TransportPeek shows public transport departure times for Sydney. It has no accounts,
-     no sign-in, and no user profiles. We do not collect, store, or sell personal information.</p>
+     no sign-in, and no user profiles, and we do not sell personal information.
+     This policy is published by the developer of TransportPeek (“we”). It lists every place
+     data goes when you use the app, including the Google, Cloudflare and GitHub services the app relies on.</p>
 
   <h2>What stays on your device</h2>
   <ul>
@@ -42,33 +44,54 @@
 
   <h2>What leaves your device</h2>
   <ul>
-    <li><strong>Real-time requests.</strong> When you view a stop, the app asks our service for
-        live departures for that stop. The request contains the stop identifier and the transport
-        mode. It does not contain your name, account, contacts, or precise location.</li>
+    <li><strong>Real-time requests to our service.</strong> When you view a stop or a trip, and when a
+        home-screen widget refreshes, the app asks our service for live departures. The request contains
+        the stop identifiers, the transport mode and, where needed, route and vehicle identifiers, plus a
+        user agent with the app version and Android version. It does not contain your name, an account,
+        your contacts or your location. Our service runs on Cloudflare Workers (see below).</li>
     <li><strong>Timetable and configuration downloads.</strong> The app downloads timetable files
-        and a configuration file from GitHub Releases. GitHub acts as the file host.</li>
+        and a configuration file from GitHub Releases. GitHub acts as the file host and, as with any
+        download, receives your IP address and the app's user agent.</li>
+    <li><strong>Street map (Google Maps).</strong> In versions with a street map, the map is drawn by the
+        Google Maps SDK. When the street map is open, the SDK loads the map tiles for the area on screen from
+        Google's servers, so Google receives your IP address and the map areas you view. See
+        <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>.</li>
+    <li><strong>Firebase Analytics and Crashlytics (Google)</strong> — see “Usage statistics” and “Crash reports”.</li>
+    <li><strong>Google AdMob SDK</strong> — see “Advertising”.</li>
   </ul>
   <p>Our service keeps short-lived operational data (which stops were recently requested, and a
      cache of live departures) so it can refresh upstream data efficiently. This data is not linked
      to a person and is overwritten continuously.</p>
+  <p>Cloudflare, which runs our service, also keeps request logs. They can include the request address
+     (which contains the stop and route identifiers), the time, the app's user agent and connection details
+     such as your IP address. These logs are kept for about three days; we use them to monitor and debug the service.</p>
 
   <h2>Location</h2>
-  <p>The app can use your location to list stops near you. This is <strong>optional</strong>: the
-     feature only asks for permission when you tap "Find stops near me", and everything else in the
-     app works without it.</p>
-  <p>When you use it, your location is read <strong>only while the app is open</strong> and is used
-     <strong>only on your device</strong>, to measure how far each stop is from you. It is never
-     sent to our service, to Google, or to anyone else; it is not stored on the device and does not
-     appear in any log or analytics event.</p>
-  <p>The app does not request background location permission, and it never tracks where you are
+  <p>Versions of the app that have “Nearby stops” and the map can use your location. Older test
+     builds without these features do not request location at all.</p>
+  <p>Location is <strong>optional</strong>. The app asks for permission when you tap
+     “Find stops near me” or the map's “My location” button, and everything else in the app works
+     without it. Once you have granted permission, the app reads your location
+     <strong>while it is open</strong>: when the search screen shows nearby stops, when you tap
+     “My location”, and when you open the street map, which then centres on you.</p>
+  <ul>
+    <li><strong>Nearby stops:</strong> the distance to each stop is worked out on your device from the
+        downloaded timetable. Your location is not part of any request the app sends to our service or to GitHub.</li>
+    <li><strong>Street map:</strong> your position is handed to the Google Maps SDK inside the app, which draws
+        it on the map, and the map is centred on it. The SDK then loads the map tiles for that area from Google,
+        so Google can tell roughly which area you are in.</li>
+    <li>The app gets your position from Android's location service. On many phones that service is itself
+        provided by Google, under your phone's location settings.</li>
+  </ul>
+  <p>The app does not save your location to storage, and it is not part of any analytics event or crash report.
+     The app does not request background location permission, and it never tracks where you are
      over time.</p>
 
   <h2>Advertising</h2>
   <p>The current release shows <strong>no ads at all</strong> (<code>ads.enabled = false</code>).
      However, the Google AdMob SDK is bundled and is started when the app launches, so it can
-     read the advertising ID even though no ad is displayed. If ads are ever switched on, this
-     page will be updated first, and users in the EEA, the UK and Switzerland will be shown a
-     consent prompt before any personalised advertising.</p>
+     contact Google and read the advertising ID even though no ad is displayed.
+     The AdMob SDK will be removed in the next version of the app; this page will be updated then.</p>
 
   <h2>Advertising ID</h2>
   <p>The app's merged manifest includes <code>com.google.android.gms.permission.AD_ID</code> and
@@ -78,7 +101,7 @@
      it says only that data is <strong>not linked to your name or to an account</strong>.</p>
 
   <h2>Usage statistics</h2>
-  <p>The app reports five Firebase Analytics events, and nothing else:</p>
+  <p>The app itself logs five Firebase Analytics events:</p>
   <ul>
     <li><code>app_session_start</code> — a foreground session begins (parameter: how it was opened).</li>
     <li><code>app_session_end</code> — that session ends (parameter: its length in seconds).</li>
@@ -88,11 +111,34 @@
         was on, and whether a network request was made).</li>
   </ul>
   <p>These events carry <strong>no stop names, no favourites, no search terms and no location</strong>.
-     Firebase Analytics also collects the advertising ID by default (see above).</p>
+     Firebase Analytics also records its own standard events (such as first open and app updates),
+     an app-instance identifier, device model, OS and app version, and a coarse location (such as
+     country and city) that Google works out from your IP address. It also collects the advertising ID
+     by default (see above).</p>
 
   <h2>Crash reports</h2>
-  <p>Firebase Crashlytics collects crash stack traces plus device model, OS version, app version
-     and session timing. It does not collect your favourites or anything you searched for.</p>
+  <p>Firebase Crashlytics collects crash stack traces plus device model, OS version, app version,
+     session timing and an installation identifier. It does not collect your favourites or anything
+     you searched for.</p>
+
+  <h2>Keeping and deleting data</h2>
+  <ul>
+    <li><strong>On your device:</strong> kept until you delete it. Uninstalling the app, or clearing its
+        storage, removes your favourites, settings and timetables (copies in your own Android backup
+        follow your backup settings).</li>
+    <li><strong>Our service:</strong> operational data is overwritten continuously; Cloudflare's request
+        logs are kept for about three days.</li>
+    <li><strong>Google and GitHub</strong> keep what they receive under their own policies:
+        <a href="https://policies.google.com/privacy">Google Privacy Policy</a>,
+        <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub
+        Privacy Statement</a>.</li>
+  </ul>
+  <p>Because there are no accounts, we cannot look up data by person. Questions are welcome at the
+     contact below.</p>
+
+  <h2>Security</h2>
+  <p>Every network connection the app makes uses HTTPS (encrypted). The release build does not allow
+     unencrypted HTTP.</p>
 
   <h2>Children</h2>
   <p>The app is not directed at children and does not knowingly collect data from them.</p>
@@ -108,11 +154,12 @@
 
   <section class="zh">
     <h1>TransportPeek — 隐私政策</h1>
-    <p class="sub">最后更新：2026-09-22</p>
+    <p class="sub">最后更新：2026-10-20</p>
 
     <h2>一句话</h2>
     <p>TransportPeek 显示悉尼公共交通的发车时间。没有账号、不需要登录、不建用户画像，
-       不收集、不保存、不出售个人信息。</p>
+       也不出售个人信息。本政策由 TransportPeek 的开发者（下称「我们」）发布，
+       列出使用 app 时数据会去的每一个地方，包括 app 依赖的 Google、Cloudflare 与 GitHub 服务。</p>
 
     <h2>只留在你手机上的</h2>
     <ul>
@@ -125,27 +172,45 @@
 
     <h2>会离开你手机的</h2>
     <ul>
-      <li><strong>实时查询。</strong>你打开某个站时，应用会向我们的服务请求该站的实时发车。
-          请求里只有站点标识和交通模式，不含姓名、账号、通讯录或精确定位。</li>
-      <li><strong>时刻表与配置下载。</strong>应用从 GitHub Releases 下载时刻表文件与配置文件，
-          GitHub 只作为文件托管方。</li>
+      <li><strong>向我们的服务查实时。</strong>你打开某个站或某趟车时、以及桌面小组件刷新时，
+          应用会向我们的服务请求实时发车。请求里有站点标识、交通模式，需要时还有线路与车辆标识，
+          以及带 app 版本和安卓版本的 User-Agent；不含姓名、账号、通讯录或你的位置。
+          我们的服务跑在 Cloudflare Workers 上（见下文）。</li>
+      <li><strong>时刻表与配置下载。</strong>应用从 GitHub Releases 下载时刻表文件与配置文件。
+          GitHub 作为文件托管方，和任何下载一样，会收到你的 IP 地址和 app 的 User-Agent。</li>
+      <li><strong>街道地图（Google 地图）。</strong>带街道地图的版本里，地图由 Google Maps SDK 绘制。
+          街道地图打开时，SDK 会从 Google 的服务器加载屏幕上那片区域的地图瓦片，
+          因此 Google 会收到你的 IP 地址和你看过的地图区域，见
+          <a href="https://policies.google.com/privacy?hl=zh-CN">Google 隐私权政策</a>。</li>
+      <li><strong>Firebase Analytics 与 Crashlytics（Google）</strong>——见「使用统计」「崩溃报告」。</li>
+      <li><strong>Google AdMob SDK</strong>——见「广告」。</li>
     </ul>
     <p>我们的服务会保留很短期的运行数据（最近被请求过哪些站、实时发车的缓存），
        用于高效刷新上游数据。这些数据不与任何个人关联，并会被持续覆盖。</p>
+    <p>运行我们服务的 Cloudflare 还会保留请求日志，内容可能包括请求地址（里面有站点与线路标识）、时间、
+       app 的 User-Agent，以及你的 IP 地址等连接信息。这些日志保留约三天，我们用它来监控和排查服务问题。</p>
 
     <h2>定位</h2>
-    <p>应用可以用你的位置列出附近的车站。这是<strong>可选的</strong>：只有你点了「用定位找附近的站」
-       才会请求权限，app 的其他功能不需要它也能正常用。</p>
-    <p>用到的时候，位置<strong>只在 app 打开时读取</strong>，而且<strong>只在你的手机上使用</strong>，
-       用来算每个车站离你多远。它不会发给我们的服务、不会发给 Google、也不会发给任何其他人；
-       不会存在手机上，也不会出现在任何日志或统计事件里。</p>
-    <p>应用不申请后台定位权限，也不会持续记录你的行踪。</p>
+    <p>带「附近站」和地图的 app 版本可以使用你的位置；没有这两个功能的早期测试版完全不申请定位。</p>
+    <p>定位是<strong>可选的</strong>。你点「用定位找附近的站」或地图上的「我的位置」按钮时，app 会请求权限；
+       app 的其他功能不需要它也能正常用。授权之后，app 在<strong>打开期间</strong>会读取你的位置：
+       搜索页显示附近的站时、你点「我的位置」时，以及你打开街道地图时（地图随即以你为中心）。</p>
+    <ul>
+      <li><strong>附近站：</strong>每个站离你多远，是在手机上用下载好的时刻表算出来的。
+          app 发给我们的服务或 GitHub 的请求里都没有你的位置。</li>
+      <li><strong>街道地图：</strong>你的位置会交给 app 内的 Google Maps SDK，由它画在地图上，
+          地图也会以它为中心。SDK 随后从 Google 加载那片区域的地图瓦片，
+          所以 Google 能大致知道你在哪一带。</li>
+      <li>app 通过安卓系统的定位服务取得位置。在很多手机上，这项系统服务本身由 Google 提供，
+          受你手机定位设置的约束。</li>
+    </ul>
+    <p>app 不把你的位置存进手机存储，位置也不出现在任何统计事件或崩溃报告里。
+       应用不申请后台定位权限，也不会持续记录你的行踪。</p>
 
     <h2>广告</h2>
     <p>当前版本<strong>一个广告都不展示</strong>（<code>ads.enabled = false</code>）。
        但 Google AdMob SDK 随 app 一起打包，并在启动时初始化，因此即使不展示广告，
-       它也可能读取广告 ID。若将来真的开启广告，会先更新本页；欧洲经济区、英国、瑞士的用户
-       在出现个性化广告前会先看到同意弹窗。</p>
+       它也可能连接 Google 并读取广告 ID。下一个版本会移除 AdMob SDK，届时更新本页。</p>
 
     <h2>广告 ID</h2>
     <p>合并后的权限清单里有 <code>com.google.android.gms.permission.AD_ID</code> 与
@@ -154,7 +219,7 @@
        所以本页不再使用「匿名」这个说法，只说这些数据<strong>不与你的姓名或账号关联</strong>。</p>
 
     <h2>使用统计</h2>
-    <p>应用只上报以下 5 个 Firebase Analytics 事件，没有别的：</p>
+    <p>app 自己上报以下 5 个 Firebase Analytics 事件：</p>
     <ul>
       <li><code>app_session_start</code> —— 一次前台会话开始（参数：从哪里打开的）。</li>
       <li><code>app_session_end</code> —— 这次会话结束（参数：时长秒数）。</li>
@@ -163,11 +228,27 @@
       <li><code>widget_bg_refresh</code> —— 后台刷新跑了一次（参数：当时是否亮屏、这次有没有发请求）。</li>
     </ul>
     <p>这些事件<strong>不含站名、不含收藏内容、不含搜索词、不含位置</strong>。
-       另外 Firebase Analytics 默认会采集广告 ID（见上一节）。</p>
+       Firebase Analytics 还会记录它自带的标准事件（如首次打开、app 更新）、一个 app 实例标识、
+       机型、系统与 app 版本，以及 Google 根据你的 IP 地址推算出的粗略位置（如国家、城市）。
+       另外它默认会采集广告 ID（见上一节）。</p>
 
     <h2>崩溃报告</h2>
-    <p>Firebase Crashlytics 采集崩溃堆栈，以及机型、系统版本、app 版本与会话时间。
+    <p>Firebase Crashlytics 采集崩溃堆栈，以及机型、系统版本、app 版本、会话时间与一个安装标识。
        它不采集你的收藏，也不采集你搜索过什么。</p>
+
+    <h2>数据保留与删除</h2>
+    <ul>
+      <li><strong>手机上：</strong>保留到你删除为止。卸载 app 或清除它的存储，会删掉收藏、设置与时刻表
+          （安卓备份里的副本按你的备份设置处理）。</li>
+      <li><strong>我们的服务：</strong>运行数据持续覆盖；Cloudflare 的请求日志保留约三天。</li>
+      <li><strong>Google 与 GitHub</strong> 按各自的政策保留它们收到的数据：
+          <a href="https://policies.google.com/privacy?hl=zh-CN">Google 隐私权政策</a>、
+          <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub 隐私声明</a>。</li>
+    </ul>
+    <p>因为没有账号，我们无法按人查找数据。有疑问欢迎通过下方联系方式问我们。</p>
+
+    <h2>安全</h2>
+    <p>app 的所有网络连接都走 HTTPS（加密）。正式版不允许未加密的 HTTP。</p>
 
     <h2>儿童</h2>
     <p>本应用不面向儿童，也不会有意收集儿童数据。</p>

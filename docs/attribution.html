@@ -28,7 +28,7 @@
 <body>
 <main>
   <h1>Data Attribution</h1>
-  <p class="sub">TransportPeek · last updated 2026-09-25</p>
+  <p class="sub">TransportPeek · last updated 2026-10-20</p>
 
   <blockquote>
     <strong>Data © Transport for NSW.</strong> Timetable and real-time data used by TransportPeek
@@ -45,11 +45,32 @@
     <tr><th>Purpose</th><th>Feed</th></tr>
     <tr><td>Sydney Trains timetable</td><td><code>v1/gtfs/schedule/sydneytrains</code></td></tr>
     <tr><td>Sydney Metro timetable</td><td><code>v2/gtfs/schedule/metro</code></td></tr>
+    <tr><td>Bus timetable</td><td><code>v1/gtfs/schedule/buses</code></td></tr>
+    <tr><td>Light rail timetable (L1 Inner West)</td><td><code>v1/gtfs/schedule/lightrail/innerwest</code></td></tr>
+    <tr><td>Light rail timetable (L2, L3 CBD and South East)</td><td><code>v1/gtfs/schedule/lightrail/cbdandsoutheast</code></td></tr>
+    <tr><td>Light rail timetable (L4 Parramatta, timetable only)</td><td><code>v1/gtfs/schedule/lightrail/parramatta</code></td></tr>
     <tr><td>Sydney Trains live departures</td><td><code>v2/gtfs/realtime/sydneytrains</code></td></tr>
     <tr><td>Sydney Metro live departures</td><td><code>v2/gtfs/realtime/metro</code></td></tr>
-    <tr><td>Service alerts</td><td><code>v2/gtfs/alerts/&lt;mode&gt;</code></td></tr>
+    <tr><td>Bus live departures</td><td><code>v1/gtfs/realtime/buses</code> and the per-operator feeds <code>v1/gtfs/realtime/buses/&lt;OperatorID&gt;</code></td></tr>
+    <tr><td>Light rail live departures (L1)</td><td><code>v2/gtfs/realtime/lightrail/innerwest</code></td></tr>
+    <tr><td>Light rail live departures (L2, L3)</td><td><code>v1/gtfs/realtime/lightrail/cbdandsoutheast</code></td></tr>
+    <tr><td>Sydney Trains vehicle positions</td><td><code>v2/gtfs/vehiclepos/sydneytrains</code></td></tr>
+    <tr><td>Sydney Metro vehicle positions</td><td><code>v2/gtfs/vehiclepos/metro</code></td></tr>
+    <tr><td>Bus vehicle positions</td><td><code>v1/gtfs/vehiclepos/buses</code></td></tr>
+    <tr><td>Light rail vehicle positions (L1)</td><td><code>v2/gtfs/vehiclepos/lightrail/innerwest</code></td></tr>
+    <tr><td>Light rail vehicle positions (L2, L3)</td><td><code>v1/gtfs/vehiclepos/lightrail/cbdandsoutheast</code></td></tr>
+    <tr><td>Sydney Trains service alerts</td><td><code>v2/gtfs/alerts/sydneytrains</code></td></tr>
+    <tr><td>Sydney Metro service alerts</td><td><code>v2/gtfs/alerts/metro</code></td></tr>
+    <tr><td>Bus service alerts</td><td><code>v2/gtfs/alerts/buses</code></td></tr>
   </table>
-  <p>Source: <a href="https://opendata.transport.nsw.gov.au/">Transport for NSW Open Data Hub</a>.</p>
+  <p>Source: <a href="https://opendata.transport.nsw.gov.au/">Transport for NSW Open Data Hub</a>.
+     Parramatta Light Rail (L4) has timetables only; live data for L4 is not used yet.</p>
+
+  <h2>Street map</h2>
+  <p>The street map is provided by <strong>Google Maps</strong> (Google Maps SDK for Android). Map data and imagery
+     &copy; Google and its data providers; the Google logo and data credits are shown on the map itself. Use of the map is
+     subject to the <a href="https://maps.google.com/help/terms_maps/">Google Maps Terms of Service</a> and the
+     <a href="https://policies.google.com/privacy">Google Privacy Policy</a>.</p>
 
   <h2>Suburb boundaries</h2>
   <blockquote>
@@ -69,11 +90,22 @@
     <li>Occupancy and vehicle files dropped. Route shapes are published as separate per-mode files, simplified (Douglas-Peucker, 5 m) and delta-encoded.</li>
     <li>Sydney Trains: trips belonging to the <code>NSWTrains</code> agency removed (they duplicate
         a separate feed).</li>
+    <li>Buses: school-bus routes (<code>route_type</code> 712) and the one ferry route carried in the bus
+        feed (<code>route_type</code> 4) removed.</li>
+    <li>Light rail: the three light rail feeds (L1; L2 and L3; L4) are combined into one database.
+        Their identifiers do not overlap and are kept as they are.</li>
     <li>Trips that serve no boarding stop (empty running) removed; stop times where the vehicle
         neither picks up nor sets down removed.</li>
+    <li>Trips that cannot actually be ridden removed: a trip is kept only if, after the first stop
+        where you can board, there is a later stop where you can get off.</li>
+    <li>The last stop of every trip is marked as not boardable (<code>pickup_type</code> set to 1), so a
+        terminating service is not listed as a departure there. Drop-off at the last stop is unchanged.</li>
+    <li>Trips labelled &ldquo;Empty Train&rdquo; (or a similar non-revenue label) that do let passengers board are
+        kept, and their headsign is replaced by the name of the last stop where passengers can get off.</li>
     <li>Platform numbers parsed out of platform stop names into a <code>platform_code</code> column.</li>
     <li>Repeated stop sequences de-duplicated into a <code>stop_patterns</code> table.</li>
-    <li>The service calendar is trimmed to a rolling window starting at the build date.</li>
+    <li>The service calendar is trimmed to a rolling window that starts the day before the build date
+        (or on the first day the feed covers, if that is later).</li>
   </ul>
   <p>Times, stop identifiers, route identifiers and trip identifiers are preserved unchanged, so the
      data remains cross-referenceable with the upstream feeds.</p>
@@ -84,7 +116,7 @@
 
   <section class="zh">
     <h1>数据归属</h1>
-    <p class="sub">TransportPeek · 最后更新 2026-09-25</p>
+    <p class="sub">TransportPeek · 最后更新 2026-10-20</p>
 
     <blockquote>
       <strong>数据版权归 Transport for NSW 所有。</strong>TransportPeek 使用的时刻表与实时数据
@@ -94,6 +126,38 @@
 
     <p>TransportPeek 是独立应用，非 Transport for NSW 出品，也未获其背书或支持。
        发车信息尽力而为，请勿作为赶车的唯一依据。</p>
+
+    <h2>用到的数据源</h2>
+    <table>
+      <tr><th>用途</th><th>Feed</th></tr>
+      <tr><td>火车时刻表</td><td><code>v1/gtfs/schedule/sydneytrains</code></td></tr>
+      <tr><td>地铁时刻表</td><td><code>v2/gtfs/schedule/metro</code></td></tr>
+      <tr><td>公交时刻表</td><td><code>v1/gtfs/schedule/buses</code></td></tr>
+      <tr><td>轻轨时刻表（L1 Inner West）</td><td><code>v1/gtfs/schedule/lightrail/innerwest</code></td></tr>
+      <tr><td>轻轨时刻表（L2、L3 CBD and South East）</td><td><code>v1/gtfs/schedule/lightrail/cbdandsoutheast</code></td></tr>
+      <tr><td>轻轨时刻表（L4 Parramatta，仅时刻表）</td><td><code>v1/gtfs/schedule/lightrail/parramatta</code></td></tr>
+      <tr><td>火车实时发车</td><td><code>v2/gtfs/realtime/sydneytrains</code></td></tr>
+      <tr><td>地铁实时发车</td><td><code>v2/gtfs/realtime/metro</code></td></tr>
+      <tr><td>公交实时发车</td><td><code>v1/gtfs/realtime/buses</code> 及按运营商的子 feed <code>v1/gtfs/realtime/buses/&lt;OperatorID&gt;</code></td></tr>
+      <tr><td>轻轨实时发车（L1）</td><td><code>v2/gtfs/realtime/lightrail/innerwest</code></td></tr>
+      <tr><td>轻轨实时发车（L2、L3）</td><td><code>v1/gtfs/realtime/lightrail/cbdandsoutheast</code></td></tr>
+      <tr><td>火车车辆位置</td><td><code>v2/gtfs/vehiclepos/sydneytrains</code></td></tr>
+      <tr><td>地铁车辆位置</td><td><code>v2/gtfs/vehiclepos/metro</code></td></tr>
+      <tr><td>公交车辆位置</td><td><code>v1/gtfs/vehiclepos/buses</code></td></tr>
+      <tr><td>轻轨车辆位置（L1）</td><td><code>v2/gtfs/vehiclepos/lightrail/innerwest</code></td></tr>
+      <tr><td>轻轨车辆位置（L2、L3）</td><td><code>v1/gtfs/vehiclepos/lightrail/cbdandsoutheast</code></td></tr>
+      <tr><td>火车服务公告</td><td><code>v2/gtfs/alerts/sydneytrains</code></td></tr>
+      <tr><td>地铁服务公告</td><td><code>v2/gtfs/alerts/metro</code></td></tr>
+      <tr><td>公交服务公告</td><td><code>v2/gtfs/alerts/buses</code></td></tr>
+    </table>
+    <p>来源：<a href="https://opendata.transport.nsw.gov.au/">Transport for NSW Open Data Hub</a>。
+       Parramatta 轻轨（L4）目前只有时刻表，还没有接 L4 的实时数据。</p>
+
+    <h2>街道地图</h2>
+    <p>街道地图由 <strong>Google 地图</strong>（Google Maps SDK for Android）提供。地图数据与图像 &copy; Google 及其数据提供方，
+       Google 标志与数据署名显示在地图上。使用地图须遵守
+       <a href="https://maps.google.com/help/terms_maps/">Google 地图服务条款</a>与
+       <a href="https://policies.google.com/privacy">Google 隐私权政策</a>。</p>
 
     <h2>区界数据</h2>
     <blockquote>
@@ -110,10 +174,15 @@
       <li>GTFS 文本文件转成 SQLite，再 gzip 压缩。</li>
       <li>丢弃 occupancies、vehicle_* 等文件；线路走向（shapes）按 mode 单独发布，经 Douglas-Peucker 5 米抽稀、差分编码。</li>
       <li>火车：裁掉 <code>NSWTrains</code> 机构的车次（与另一个独立 feed 重复）。</li>
+      <li>公交：裁掉校车线路（<code>route_type</code> 712），以及混在公交 feed 里的那一条渡轮线路（<code>route_type</code> 4）。</li>
+      <li>轻轨：三个轻轨 feed（L1；L2 与 L3；L4）合并成一个库。它们的 ID 互不重叠，原样保留。</li>
       <li>裁掉全程不上客的班次（空车调度），以及既不上客也不下客的停站行（飞站）。</li>
+      <li>裁掉实际坐不了的班次：在第一个可上客的站之后，还得有一个可下客的站，这趟车才保留。</li>
+      <li>每个班次的末站标成不可上客（<code>pickup_type</code> 改为 1），终到的车不会在终点站被列成出发；末站的下客不变。</li>
+      <li>标着「Empty Train」（或类似非营运字样）、但实际可以上客的班次保留，车头方向改写成最后一个可下客的站名。</li>
       <li>从站台子站名里解析出站台号，写进 <code>platform_code</code> 列。</li>
       <li>重复的停站序列归一化到 <code>stop_patterns</code> 表。</li>
-      <li>服务日历裁成从建库当天起的滚动窗口。</li>
+      <li>服务日历裁成从建库前一天起的滚动窗口（若 feed 本身从更晚的日子开始，则从 feed 的第一天起）。</li>
     </ul>
     <p>时刻、站点 ID、线路 ID、车次 ID 全部保持原值，因此仍可与上游数据互相对照。</p>
   </section>
