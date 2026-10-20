@@ -62,6 +62,11 @@
   <p>Our service keeps short-lived operational data (which stops were recently requested, and a
      cache of live departures) so it can refresh upstream data efficiently. This data is not linked
      to a person and is overwritten continuously.</p>
+  <p>To limit how many requests one connection can make (60 per minute), our service also keeps a
+     per-IP-address request counter. It is held <strong>in memory only</strong> — it is not written to disk
+     or to a database — and is used only for this rate limit. Each counter covers a 60-second window, but an
+     expired entry is not removed straight away, so your IP address can stay in that memory until the service
+     instance is recycled by Cloudflare.</p>
   <p>Cloudflare, which runs our service, also keeps request logs. They can include the request address
      (which contains the stop and route identifiers), the time, the app's user agent and connection details
      such as your IP address. These logs are kept for about three days; we use them to monitor and debug the service.</p>
@@ -126,7 +131,8 @@
     <li><strong>On your device:</strong> kept until you delete it. Uninstalling the app, or clearing its
         storage, removes your favourites, settings and timetables (copies in your own Android backup
         follow your backup settings).</li>
-    <li><strong>Our service:</strong> operational data is overwritten continuously; Cloudflare's request
+    <li><strong>Our service:</strong> operational data is overwritten continuously; the in-memory rate-limit
+        counters disappear when the service instance is recycled; Cloudflare's request
         logs are kept for about three days.</li>
     <li><strong>Google and GitHub</strong> keep what they receive under their own policies:
         <a href="https://policies.google.com/privacy">Google Privacy Policy</a>,
@@ -187,6 +193,9 @@
     </ul>
     <p>我们的服务会保留很短期的运行数据（最近被请求过哪些站、实时发车的缓存），
        用于高效刷新上游数据。这些数据不与任何个人关联，并会被持续覆盖。</p>
+    <p>为了限制单个连接的请求量（每分钟 60 次），我们的服务还会按 IP 地址记一个请求计数。
+       它<strong>只放在内存里</strong>，不写进磁盘或数据库，只用于限流。每个计数管 60 秒，
+       但过期的条目不会立刻清掉，所以你的 IP 地址可能一直留在这块内存里，直到 Cloudflare 回收这个服务实例。</p>
     <p>运行我们服务的 Cloudflare 还会保留请求日志，内容可能包括请求地址（里面有站点与线路标识）、时间、
        app 的 User-Agent，以及你的 IP 地址等连接信息。这些日志保留约三天，我们用它来监控和排查服务问题。</p>
 
@@ -223,7 +232,7 @@
     <ul>
       <li><code>app_session_start</code> —— 一次前台会话开始（参数：从哪里打开的）。</li>
       <li><code>app_session_end</code> —— 这次会话结束（参数：时长秒数）。</li>
-      <li><code>stop_detail_open</code> —— 打开了某条收藏的详情页。</li>
+      <li><code>stop_detail_open</code> —— 打开了某个发车详情页。</li>
       <li><code>widget_bound</code> —— 桌面小组件绑定到某条收藏（参数：尺寸）。</li>
       <li><code>widget_bg_refresh</code> —— 后台刷新跑了一次（参数：当时是否亮屏、这次有没有发请求）。</li>
     </ul>
@@ -240,7 +249,7 @@
     <ul>
       <li><strong>手机上：</strong>保留到你删除为止。卸载 app 或清除它的存储，会删掉收藏、设置与时刻表
           （安卓备份里的副本按你的备份设置处理）。</li>
-      <li><strong>我们的服务：</strong>运行数据持续覆盖；Cloudflare 的请求日志保留约三天。</li>
+      <li><strong>我们的服务：</strong>运行数据持续覆盖；内存里的限流计数随服务实例回收而消失；Cloudflare 的请求日志保留约三天。</li>
       <li><strong>Google 与 GitHub</strong> 按各自的政策保留它们收到的数据：
           <a href="https://policies.google.com/privacy?hl=zh-CN">Google 隐私权政策</a>、
           <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub 隐私声明</a>。</li>

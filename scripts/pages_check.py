@@ -10,6 +10,8 @@
        抽出来的每一条也必须在页上，且必须在 WORKER_FEEDS 里（Worker 加了 feed 而这里没跟 → 红）。
   2. attribution.html 有 CC BY 4.0 与 Google 地图署名。
   3. privacy.html 不再有已证伪的两句承诺（「never sent … Google」「only when you tap」及其中文）。
+  4. privacy.html 中英两部分都披露 Worker 按 IP 的内存限流（worker/src/index.js rateLimited / RATE：
+     cf-connecting-ip 作 key、60 s 窗口、超 5000 条才清过期项）。
 
 两种布局都认：data 仓（docs/、scripts/）与主仓 pipeline/（pages/、scripts/）。
 """
@@ -48,6 +50,10 @@ WORKER_FEEDS = [
 
 BANNED_PRIVACY = ["never sent", "only when you tap", "only asks for permission when you tap",
                   "不会发给 Google", "只有你点了"]
+
+# 限流披露：每种语言要同时出现的词组
+RATE_LIMIT_EN = ["per-IP-address request counter", "in memory only", "60 per minute"]
+RATE_LIMIT_ZH = ["按 IP 地址记一个请求计数", "只放在内存里", "每分钟 60 次"]
 
 RT_LITERAL = re.compile(r"RT\s*\+\s*'([^']+)'")
 
@@ -95,7 +101,15 @@ def check(pages_dir, worker_src=None):
     for needle in ("CC BY 4.0", "Google"):
         if needle not in en or needle not in zh:
             errors.append("attribution.html 中英两部分都要提到 %r" % needle)
-    priv = text_of(open(os.path.join(pages_dir, "privacy.html"), encoding="utf-8").read())
+    priv_raw = open(os.path.join(pages_dir, "privacy.html"), encoding="utf-8").read()
+    priv = text_of(priv_raw)
+    p_en, p_zh = split_en_zh(priv_raw)
+    for phrase in RATE_LIMIT_EN:
+        if phrase not in p_en:
+            errors.append("privacy.html 英文部分缺 IP 限流披露 %r" % phrase)
+    for phrase in RATE_LIMIT_ZH:
+        if phrase not in p_zh:
+            errors.append("privacy.html 中文部分缺 IP 限流披露 %r" % phrase)
     for b in BANNED_PRIVACY:
         if b in priv:
             errors.append("privacy.html 仍含已证伪的说法 %r" % b)
