@@ -69,7 +69,12 @@ jobs:
       # 用 UTC 会让 tag 比库的 calendar_start 早一天（见 build_db.service_today 的注释）。
       - name: 定 tag
         id: meta
-        run: echo "tag=$(TZ=Australia/Sydney date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+        # prerelease 用自己的 tag `<日期>-pre`：与同日 stable 不同名，不会把当天的 stable 顶掉
+        # （manifest 里的下载 URL 跟着这个 tag 走；客户端只读 releases/latest，不认 tag 名）
+        run: |
+          tag="$(TZ=Australia/Sydney date +%Y-%m-%d)"
+          if [ "$CHANNEL" = "prerelease" ]; then tag="${tag}-pre"; fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
 
       - name: D2 拉上游 GTFS
         env:
