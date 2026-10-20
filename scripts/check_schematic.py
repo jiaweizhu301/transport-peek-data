@@ -236,6 +236,13 @@ def static_warnings(doc, build_dir):
     return warns
 
 
+def _annotate(level, msg):
+    # BE-19：Actions 里每条告警/错误再打一条 ::warning:: / ::error:: 注解，显示在 run 页顶部（M8 告警 issue 也从这里读）
+    if os.environ.get('GITHUB_ACTIONS') == 'true':
+        msg = msg.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+        print('::%s title=线路图 JSON::%s' % (level, msg))
+
+
 def run(json_path, build_dir):
     doc = json.load(open(json_path, encoding='utf-8'))
     # 首行打印版本：每日 Job Summary 看得出 data 仓副本停在哪一版（副本只能从主仓真源拷，§6.2）
@@ -243,12 +250,14 @@ def run(json_path, build_dir):
     errs = structural_errors(doc)
     for e in errs:
         print('ERROR ' + e)
+        _annotate('error', e)
     if errs:
         print('线路图 JSON 结构错误 %d 处 -> 这份 JSON app 读不了，必须修' % len(errs))
         return 2
     warns = static_warnings(doc, build_dir)
     for w in warns:
         print('WARN  ' + w)
+        _annotate('warning', w)
     summary = os.environ.get('GITHUB_STEP_SUMMARY')
     if summary and warns:
         with open(summary, 'a', encoding='utf-8') as f:
@@ -356,6 +365,22 @@ def selftest():
             rc = run(gp, d)
         assert buf.getvalue().startswith('schematic data_version 2026-09-24\n'), buf.getvalue()[:80]
         assert rc == 1   # 只建了 sydneytrains 库：metro / lightrail 两条「（跳过）」算告警
+        n += 1
+        # BE-19：GITHUB_ACTIONS=true 时每条告警都有一条 ::warning:: 注解；% 和换行要转义
+        os.environ['GITHUB_ACTIONS'] = 'true'
+        buf, b2 = io.StringIO(), io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf):
+                rc = run(gp, d)
+            with contextlib.redirect_stdout(b2):
+                _annotate('warning', 'a%b\nc')
+        finally:
+            os.environ.pop('GITHUB_ACTIONS', None)
+        out = buf.getvalue().splitlines()
+        assert rc == 1
+        nw = sum(x.startswith('WARN  ') for x in out)
+        assert nw > 0 and nw == sum(x.startswith('::warning title=') for x in out), out
+        assert b2.getvalue() == '::warning title=线路图 JSON::a%25b%0Ac\n', b2.getvalue()
         n += 1
         # 颜色不一致
         bad = copy.deepcopy(good)
