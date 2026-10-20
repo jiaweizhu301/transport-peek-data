@@ -23,6 +23,7 @@ SCHEMAS = os.path.join(os.path.dirname(HERE), 'schemas')
 sys.path.insert(0, HERE)
 import build_db  # noqa: E402  非营运词表的唯一真相
 import build_shapes  # noqa: E402  M6 shapes 资产对账
+import stop_ops  # noqa: E402  XBE-02 stop_ops.json / valid_stops.<mode>.json 对账
 from gtfs_modes import self_parent  # noqa: E402  与 Worker MODE_TOPOLOGY 同一个标记
 
 
@@ -133,8 +134,16 @@ def main():
                 elif not any(s['platform_code'] for s in sp['stops']):
                     fails.append('%s: stop_parents 全部 platform_code 为 null' % mode)
         db.close()
-        print('OK   %s: gz %.2f MB / sha256 / meta / stop_parents 全部对账一致'
-              % (mode, feed['size_bytes'] / 1e6))
+        # XBE-02：每个 mode 的有效站表（WP-06 拿它挡垃圾站号）；公交另有 STOP_OPS
+        errs = stop_ops.valid_stops_errors(d, mode, db_path, static_version)
+        if mode == stop_ops.STOP_OPS_MODE:
+            errs += stop_ops.stop_ops_errors(d, db_path, static_version)
+        if errs:
+            fails += errs
+            continue
+        print('OK   %s: gz %.2f MB / sha256 / meta / stop_parents / valid_stops%s 全部对账一致'
+              % (mode, feed['size_bytes'] / 1e6,
+                 ' / stop_ops' if mode == stop_ops.STOP_OPS_MODE else ''))
 
     # M6 §6.1：shapes 顶层键。每项与盘上 .bin.gz、与该 mode 的 feeds 版本和库里的 route 逐项对账
     for mode, entry in manifest.get('shapes', {}).items():

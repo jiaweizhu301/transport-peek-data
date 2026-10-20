@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """D3 · 生成 Release 资产：manifest.json / config.json / stop_parents.<mode>.json /
-non_revenue_headsigns.json / parsing_rules.json。
+valid_stops.<mode>.json / stop_ops.json / non_revenue_headsigns.json / parsing_rules.json。
 
   python gen_manifest.py <build_dir> --tag <tag> [--repo owner/name] [--channel stable|prerelease]
 
@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gtfs_modes import PUBLISH_MODES, self_parent
 import build_db
 import shapes
+import stop_ops
 
 # manifest/config 的 schema_version（契约 const 1）
 MANIFEST_SCHEMA_VERSION = 1
@@ -199,6 +200,18 @@ def main():
                   encoding='utf-8') as f:
             json.dump(sp, f, ensure_ascii=False, indent=1)
         print('stop_parents.%s.json  %d 条' % (mode, len(sp['stops'])), flush=True)
+        # XBE-02：有效站表 + 公交 STOP_OPS，每天随库重算（此前 STOP_OPS 只在 Worker 部署时生成一次）。
+        # 同 non_revenue_headsigns：不进 manifest（冻结契约），URL 与 stop_parents_url_template 同源。
+        db_path = os.path.join(a.build_dir, mode + '.sqlite')
+        vp, vs = stop_ops.write_valid_stops(a.build_dir, db_path, mode, sv)
+        print('%s  %d 个父站  %d 字节' % (os.path.basename(vp), len(vs['stops']), os.path.getsize(vp)),
+              flush=True)
+        if mode == stop_ops.STOP_OPS_MODE:
+            op, payload, n = stop_ops.write_stop_ops(a.build_dir, db_path)
+            star = sum(1 for s in vs['stops'] if stop_ops.lookup(payload, s) == '*')
+            print('%s  stops=%d runs=%d sets=%d  取整份 feed 的站 %d（%.1f%%）  %d 字节'
+                  % (os.path.basename(op), n, len(payload['runs'].split(';')), len(payload['sets']),
+                     star, 100.0 * star / max(1, len(vs['stops'])), os.path.getsize(op)), flush=True)
 
     manifest = {
         'schema_version': MANIFEST_SCHEMA_VERSION,

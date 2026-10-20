@@ -84,11 +84,13 @@ upload "${BUILD_DIR}/config.json"
 upload "${BUILD_DIR}/non_revenue_headsigns.json"
 # 解析规则（PLATFORM_RE 等）：同上，客户端 Regex(读到的字符串) 直接用
 upload "${BUILD_DIR}/parsing_rules.json"
-for f in "${BUILD_DIR}"/*.sqlite.gz "${BUILD_DIR}"/stop_parents.*.json "${BUILD_DIR}"/shapes.*.bin.gz; do
+# XBE-02：stop_ops.json（公交 STOP_OPS）+ valid_stops.<mode>.json（有效站表），WP-06 的 Worker 按同源 URL 取
+for f in "${BUILD_DIR}"/*.sqlite.gz "${BUILD_DIR}"/stop_parents.*.json "${BUILD_DIR}"/shapes.*.bin.gz \
+         "${BUILD_DIR}"/stop_ops.json "${BUILD_DIR}"/valid_stops.*.json; do
   [ -e "$f" ] && upload "$f"
 done
-if [ "$uploaded" -lt 6 ]; then
-  echo "FATAL 只传了 ${uploaded} 个资产（至少应有 manifest/config/词表/解析规则/1 个库/1 个 stop_parents）" >&2
+if [ "$uploaded" -lt 7 ]; then
+  echo "FATAL 只传了 ${uploaded} 个资产（至少应有 manifest/config/词表/解析规则/1 个库/1 个 stop_parents/1 个 valid_stops）" >&2
   exit 1
 fi
 

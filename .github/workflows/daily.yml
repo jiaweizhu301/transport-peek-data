@@ -61,6 +61,7 @@ jobs:
         run: |
           python scripts/shapes.py
           python scripts/build_shapes.py --selftest
+          python scripts/stop_ops.py --selftest
           python scripts/check_schematic.py --selftest
           python scripts/suburbs.py --selftest
 
@@ -93,7 +94,7 @@ jobs:
         continue-on-error: true
         run: python scripts/check_schematic.py schematic/sydney-rail.json build
 
-      - name: D3 生成 manifest / config / stop_parents
+      - name: D3 生成 manifest / config / stop_parents / valid_stops / stop_ops
         run: |
           python scripts/gen_manifest.py build \
             --tag "${{ steps.meta.outputs.tag }}" \
