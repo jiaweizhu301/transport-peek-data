@@ -159,9 +159,8 @@ def build_config(min_app_version=MIN_SUPPORTED_APP_VERSION):
             'message_key': 'force_update_generic',
         },
         # M6 D6 / §5.8–5.9（契约 4b 加性扩展 `map`）：与 P4 MapConfig 默认值逐字一致
+        # M7.5 BE-20：不再发 map_style_url_light/dark（街道图只用 Google Maps，客户端从不读它们）
         'map': {
-            'map_style_url_light': 'https://tiles.openfreemap.org/styles/liberty',
-            'map_style_url_dark': 'https://tiles.openfreemap.org/styles/dark',
             'vehicle_fade_after_seconds': 120,
             'vehicle_grey_after_seconds': 300,
             'vehicle_hide_after_seconds': 900,
