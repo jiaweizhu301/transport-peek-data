@@ -17,6 +17,8 @@
      2026-09-07 真机在 Central 看到「开往 Empty Train」才发现管线漏了这一刀；加这条不变量是为了
      上游哪天冒出新的非营运词时管线**报警**，而不是又静默显示给用户。
   9. 公交区表（M6 §6.3）：两表行数区间、父站归属率 ≥ 99%、无孤儿行（FK 已由第 5 条的 foreign_key_check 覆盖）
+ 10. 末站不可上客（M7.5 CO-19 / GAP-05）：任何 pattern 的最后一站 pickup_type 都不许是 0。
+     否则终点站会把「到站的车」列成出发（Liverpool Stand A 前 40 条 33 条幻影）。OK 时也打印计数。
 """
 import datetime as _dt
 import json
@@ -72,6 +74,13 @@ MIN_PLATFORM_CODE = {'sydneytrains': 400, 'metro': 30, 'lightrail': 50}
 # 区数上限卡在派生文件的 1,610（bbox 内 NSW 区总数）附近；行数与 stops 同量级。
 SUBURB_RANGES = {'suburbs': (700, 1700), 'stop_suburbs': (20000, 60000)}
 MIN_SUBURB_COVERAGE = 0.99
+
+# 10. 末站（每个 pattern 最大 stop_sequence 那一行）仍可上客的 pattern 数。shape_check.py 也用这一句。
+TRIPFINAL_PICKUP0_SQL = (
+    'SELECT count(*) FROM pattern_stops ps JOIN '
+    '(SELECT pattern_id, max(stop_sequence) AS seq FROM pattern_stops GROUP BY pattern_id) last '
+    'ON last.pattern_id = ps.pattern_id AND last.seq = ps.stop_sequence '
+    'WHERE ps.pickup_type = 0')
 
 
 def days_between(lo, hi):
@@ -291,6 +300,13 @@ def check(db_path, mode):
         fails.append('trips.offsets 解码失败 %d 例（只列前几条）：%s' % (len(bad_blob), bad_blob))
     if nonmono:
         fails.append('trips.offsets 时刻非单调 %d 例（只列前几条）：%s' % (len(nonmono), nonmono))
+
+    # 10. 末站不可上客（CO-19）：硬规则
+    n = q1(TRIPFINAL_PICKUP0_SQL)
+    print('     %s: 末站可上客（trip-final pickup_type = 0）的 pattern %d 个' % (mode, n))
+    if n:
+        fails.append('末站可上客（trip-final pickup_type = 0）的 pattern %d 个（应为 0，CO-19；'
+                     'build_db.flush() 该把末站 pickup_type 改成 1）' % n)
 
     db.close()
     return fails

@@ -598,10 +598,21 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
     used_stop_ids = set()  # schema 2 没有 stop_times 表可以 SELECT DISTINCT，只能在这里攒
 
     dropped_nonrevenue = [0]
+    tripfinal_pickup_cleared = [0]
 
     def flush(tid, rows):
         if not rows:
             return
+        rows.sort(key=lambda r: r[1])
+        # 末站不可上客（M7.5 CO-19）：上游给终点站也标 pickup_type = 0，客户端出发列表只看
+        # pickup_type = 0，终点站就把「到站的车」列成出发（Liverpool Stand A 前 40 条 33 条幻影）。
+        # 末行 pickup_type 改 1，drop_off_type 不动；环线首站 = 末站时只动末次停靠。
+        # 必须在下面「无可上客站 -> 丢」之前：只剩末站可上客的 trip（1 站的 RTTA_REV 'Special'）随之丢弃。
+        # 也必须在几何键之前：pattern 键与 pattern_stops 带的是改后的值。
+        last = rows[-1]
+        if last[5] != 1:
+            rows[-1] = last[:5] + (1,) + last[6:]
+            tripfinal_pickup_cleared[0] += 1
         # 非营运班次：整条 trip 没有任何一站可上客（RTTA_REV/RTTA_DEF 空车与调车）-> 整条丢
         if not any(r[5] == 0 for r in rows):
             if tid in pending_nonrevenue:
@@ -609,7 +620,6 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
             else:
                 dropped_nonrevenue[0] += 1
             return
-        rows.sort(key=lambda r: r[1])
         route_id = trips[tid][1]
         if tid in pending_nonrevenue:
             hs = revenue_headsign_from_stops(rows, stops)
@@ -779,6 +789,7 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
                 dropped_nonrevenue_trips=dropped_nonrevenue[0],
                 dropped_nonrevenue_headsign_trips=dropped_nonrevenue_headsign[0],
                 renamed_nonrevenue_headsign_trips=renamed_nonrevenue_headsign[0],
+                tripfinal_pickup_cleared=tripfinal_pickup_cleared[0],
                 sqlite_bytes=os.path.getsize(out_path), **counts)
 
 

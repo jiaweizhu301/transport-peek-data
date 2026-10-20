@@ -13,6 +13,7 @@ TAG="$(TZ=Australia/Sydney date +%Y-%m-%d)"   # 悉尼当地日，与 daily.yml 
 
 python "$HERE/golden_check.py"
 python "$HERE/nonrevenue_check.py"
+python "$HERE/shape_check.py"
 python "$HERE/tz_check.py"
 python "$HERE/shapes.py"
 python "$HERE/check_schematic.py" --selftest
