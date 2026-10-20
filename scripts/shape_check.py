@@ -101,6 +101,15 @@ def run():
         db.close()
         fails = [f for f in invariants.check(out, 'sydneytrains') if '末站可上客' in f]
         assert fails, 'invariants must fail on a trip-final pickup_type = 0 row'
+        # 反例（R5A-09）：把 TWO 的末站改成不可下客 -> 坐不了，invariants 的硬规则必须报出来
+        db = sqlite3.connect(out)
+        assert db.execute(invariants.UNRIDEABLE_SQL).fetchone()[0] == 0
+        db.execute('UPDATE pattern_stops SET drop_off_type = 1 WHERE pattern_id = '
+                   "(SELECT pattern_id FROM trips WHERE trip_id = 'TWO') AND stop_id = 'B1'")
+        db.commit()
+        db.close()
+        fails = [f for f in invariants.check(out, 'sydneytrains') if '坐不了' in f]
+        assert fails, 'invariants must fail on an unrideable pattern'
     print('shape_check OK')
 
 

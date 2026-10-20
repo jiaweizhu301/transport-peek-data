@@ -599,6 +599,7 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
 
     dropped_nonrevenue = [0]
     tripfinal_pickup_cleared = [0]
+    dropped_unrideable = [0]
 
     def flush(tid, rows):
         if not rows:
@@ -619,6 +620,13 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
                 dropped_nonrevenue_headsign[0] += 1
             else:
                 dropped_nonrevenue[0] += 1
+            return
+        # ≥ 2 站规则（M7.5 R5A-09）：得有一站可上客、且它**之后**还有一站可下客，这趟车才坐得了。
+        # 否则它在出发列表里只是幽灵方向（例：可上客站之后全是只上不下的站）。上面那条「一站都不让上」
+        # 是它的特例，计数分开留着。**不按 route 丢 RTTA_REV**：54bd902 的多站 Empty Train 照旧保留改名。
+        board = next(i for i, r in enumerate(rows) if r[5] == 0)
+        if not any(r[6] != 1 for r in rows[board + 1:]):
+            dropped_unrideable[0] += 1
             return
         route_id = trips[tid][1]
         if tid in pending_nonrevenue:
@@ -790,6 +798,7 @@ def build(zip_path, mode, static_version, out_path, horizon_days, today=None):
                 dropped_nonrevenue_headsign_trips=dropped_nonrevenue_headsign[0],
                 renamed_nonrevenue_headsign_trips=renamed_nonrevenue_headsign[0],
                 tripfinal_pickup_cleared=tripfinal_pickup_cleared[0],
+                dropped_unrideable_trips=dropped_unrideable[0],
                 sqlite_bytes=os.path.getsize(out_path), **counts)
 
 

@@ -19,6 +19,8 @@
   9. 公交区表（M6 §6.3）：两表行数区间、父站归属率 ≥ 99%、无孤儿行（FK 已由第 5 条的 foreign_key_check 覆盖）
  10. 末站不可上客（M7.5 CO-19 / GAP-05）：任何 pattern 的最后一站 pickup_type 都不许是 0。
      否则终点站会把「到站的车」列成出发（Liverpool Stand A 前 40 条 33 条幻影）。OK 时也打印计数。
+ 11. 每个 pattern 都坐得了（M7.5 R5A-09）：至少一站可上客（pickup_type = 0），且它**后面**还有一站可下客
+     （drop_off_type <> 1）。否则它只是一个「方向」幽灵（1 站的 RTTA_REV 'Special' 让 Katoomba 能被选中）。
 """
 import datetime as _dt
 import json
@@ -81,6 +83,15 @@ TRIPFINAL_PICKUP0_SQL = (
     '(SELECT pattern_id, max(stop_sequence) AS seq FROM pattern_stops GROUP BY pattern_id) last '
     'ON last.pattern_id = ps.pattern_id AND last.seq = ps.stop_sequence '
     'WHERE ps.pickup_type = 0')
+
+# 11. 坐不了的 pattern 数：首个可上客站之后没有可下客站（含一站都不让上 / 一站都不让下）。
+#     与 build_db.flush() 的 ≥ 2 站规则同一口径；nonrevenue_check.py / shape_check.py 也用这一句。
+UNRIDEABLE_SQL = (
+    'SELECT count(*) FROM (SELECT pattern_id, '
+    'min(CASE WHEN pickup_type = 0 THEN stop_sequence END) AS board, '
+    'max(CASE WHEN drop_off_type <> 1 THEN stop_sequence END) AS alight '
+    'FROM pattern_stops GROUP BY pattern_id) '
+    'WHERE board IS NULL OR alight IS NULL OR alight <= board')
 
 
 def days_between(lo, hi):
@@ -307,6 +318,13 @@ def check(db_path, mode):
     if n:
         fails.append('末站可上客（trip-final pickup_type = 0）的 pattern %d 个（应为 0，CO-19；'
                      'build_db.flush() 该把末站 pickup_type 改成 1）' % n)
+
+    # 11. 坐不了的 pattern（R5A-09）：硬规则
+    n = q1(UNRIDEABLE_SQL)
+    print('     %s: 坐不了（无「可上客站 -> 其后可下客站」）的 pattern %d 个' % (mode, n))
+    if n:
+        fails.append('坐不了的 pattern %d 个（应为 0，R5A-09；build_db.flush() 该丢掉没有'
+                     '「可上客站之后还有可下客站」的 trip）' % n)
 
     db.close()
     return fails
