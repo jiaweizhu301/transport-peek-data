@@ -67,6 +67,12 @@ def main():
             % (rt['widget_stale_after_minutes'], rt['widget_min_refresh_minutes'])
         )
 
+    # M7.5 WP-06 B2（contract §9.6-1）：S 的合法区间 [180, 240]。客户端编译期阈值是 180 s，远端值低于它会让
+    # WP-07 之后的客户端钳回、高于 240 则在公交上把旧数据多当一会儿 Live。区间外不发。
+    if not 180 <= rt['stale_after_seconds'] <= 240:
+        fails.append('realtime.stale_after_seconds(%s) 必须在 [180, 240]（contract §9.6-1）'
+                     % rt['stale_after_seconds'])
+
     for mode, feed in manifest['feeds'].items():
         gz = os.path.join(d, mode + '.sqlite.gz')
         db_path = os.path.join(d, mode + '.sqlite')

@@ -148,7 +148,9 @@ def build_config(min_app_version=MIN_SUPPORTED_APP_VERSION):
             # M3-3.20：这份副本此前停在 30，而线上（data 仓）跑的是 60 —— 任何人从主仓
             # 重拷一次就会把线上静默打回 30。现已收口，两边逐字一致。
             'widget_min_refresh_minutes': 60,
-            'stale_after_seconds': 120,
+            # M7.5 WP-06 B2（contract §9.6-1，T0 r2）：120 -> 180。远端 S 只作用于公交、被钳在 [180, 240]（WP-07）；
+            # 已发的 M7 / m7.5a 客户端从不读这个键（只反序列化，阈值是编译期 PollingPolicy.STALE_THRESHOLD = 180 s）。
+            'stale_after_seconds': 180,
             # 必须 > widget_min_refresh_minutes，否则每个正常刷新周期里都有一段时间
             # 把好数据显示成「已过时」。75 = 60 + 15 余量，取最小合理值。
             # 这条约束由 validate_assets.py 断言（M3-3.20），不再只写在 schema 的描述文字里。
