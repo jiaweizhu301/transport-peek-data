@@ -448,8 +448,37 @@ def stop_feeds_errors(build_dir, db_path, static_version, mode=STOP_FEEDS_MODE):
     return errs
 
 
+def client_requestable_stops(gz_path):
+    """客户端能拿来请求实时的站 = 它装的库（gz 解压）里的父站，口径逐字取自客户端：
+      core-gtfs SqliteTimetableRepository（parentStops / findStop / 搜索 / 附近：`WHERE location_type = 1`）；
+      core-journey ModeIndex（`location_type = 1 OR (location_type = 0 AND parent_station IS NULL)`）。
+    -> (父站集合, Journey 多出来的站（应为空）, 错误或 None)"""
+    import gzip
+    import shutil
+    import tempfile
+    if not os.path.exists(gz_path):
+        return set(), [], '缺 %s（客户端装的就是它）' % os.path.basename(gz_path)
+    fd, tmp = tempfile.mkstemp(suffix='.sqlite')
+    os.close(fd)
+    try:
+        with gzip.open(gz_path, 'rb') as src, open(tmp, 'wb') as dst:
+            shutil.copyfileobj(src, dst)
+        db = _open(tmp)
+        try:
+            parents = {r[0] for r in db.execute('SELECT stop_id FROM stops WHERE location_type = 1')}
+            journey = {r[0] for r in db.execute(
+                'SELECT stop_id FROM stops WHERE location_type = 1'
+                ' OR (location_type = 0 AND parent_station IS NULL)')}
+        finally:
+            db.close()
+    finally:
+        os.remove(tmp)
+    return parents, sorted(journey - parents), None
+
+
 def valid_stops_errors(build_dir, mode, db_path, static_version):
-    """validate_assets 用：valid_stops.<mode>.json 存在、mode/static_version 对、与库里父站集合逐个相等、有序无重。"""
+    """validate_assets 用：valid_stops.<mode>.json 存在、mode/static_version 对、与**客户端装的库**（<mode>.sqlite.gz）
+    按客户端口径得出的父站集合逐个相等、Journey 索引不多出站、有序无重。"""
     p = os.path.join(build_dir, valid_stops_filename(mode))
     if not os.path.exists(p):
         return ['%s: 缺 %s（gen_manifest.py 没跑？）' % (mode, os.path.basename(p))]
@@ -459,11 +488,14 @@ def valid_stops_errors(build_dir, mode, db_path, static_version):
         errs.append('%s: %s 的 mode/static_version 对不上（%r/%r）'
                     % (mode, os.path.basename(p), doc.get('mode'), doc.get('static_version')))
     got = doc.get('stops') or []
-    db = _open(db_path)
-    try:
-        parents = {r[0] for r in db.execute('SELECT stop_id FROM stops WHERE location_type = 1')}
-    finally:
-        db.close()
+    # 对的是**客户端装的那份库**（<mode>.sqlite.gz 解压，FeedInstaller 原样装），不是旁边的 .sqlite ——
+    # suburbs.py 等步骤会改库再 gzip，两份一旦不同步，Worker 的有效站表就和手机上的库对不上。
+    parents, journey_extra, cerr = client_requestable_stops(db_path + '.gz')
+    if cerr:
+        return errs + ['%s: %s' % (mode, cerr)]
+    if journey_extra:
+        errs.append('%s: 客户端 Journey 索引（ModeIndex）会把 %d 个非父站当站点用，它们不在 %s：%s'
+                    % (mode, len(journey_extra), os.path.basename(p), ', '.join(journey_extra[:5])))
     missing = sorted(parents - set(got))
     extra = sorted(set(got) - parents)
     if missing:
@@ -519,20 +551,29 @@ def _fixture_db(path, rows, parents_extra=()):
     db = sqlite3.connect(path)
     db.executescript(
         'CREATE TABLE meta (static_version TEXT);'
-        'CREATE TABLE stops (stop_id TEXT, location_type INTEGER);'
+        'CREATE TABLE stops (stop_id TEXT, location_type INTEGER, parent_station TEXT);'
         'CREATE TABLE routes (route_id TEXT, agency_id TEXT);'
         'CREATE TABLE stop_patterns (pattern_id INTEGER, route_id TEXT);'
         'CREATE TABLE pattern_stops (pattern_id INTEGER, stop_id TEXT);')
     db.execute("INSERT INTO meta VALUES ('20261017-0000')")
     stops = sorted({s for s, _ in rows} | set(parents_extra))
-    db.executemany('INSERT INTO stops VALUES (?, 1)', [(s,) for s in stops])
-    db.execute("INSERT INTO stops VALUES ('9999990', 0)")  # 子站：不进 valid_stops
+    db.executemany('INSERT INTO stops VALUES (?, 1, NULL)', [(s,) for s in stops])
+    db.execute("INSERT INTO stops VALUES ('9999990', 0, ?)", (stops[0],))  # 子站：不进 valid_stops
     for k, (s, a) in enumerate(rows):
         db.execute('INSERT INTO routes VALUES (?, ?)', ('%s_R%d' % (a, k), a))
         db.execute('INSERT INTO stop_patterns VALUES (?, ?)', (k, '%s_R%d' % (a, k)))
         db.execute('INSERT INTO pattern_stops VALUES (?, ?)', (k, s))
     db.commit()
     db.close()
+    _gzip_copy(path)
+
+
+def _gzip_copy(path):
+    """测试用：像 build_db / suburbs 那样把库 gzip 成客户端下载的 <path>.gz"""
+    import gzip
+    import shutil
+    with open(path, 'rb') as src, gzip.open(path + '.gz', 'wb') as dst:
+        shutil.copyfileobj(src, dst)
 
 
 def selftest():
@@ -612,8 +653,45 @@ def selftest():
         assert skipped == ['X200'], skipped
         assert stop_ops_errors(d, dbx, sv, None) == [] and valid_stops_errors(d, 'buses', dbx, sv) == []
         n += 1
+        n += _selftest_client_stops(d, sv)
         n += _selftest_observed(d, dbp, sv)
         n += _selftest_stop_feeds(d)
+    return n
+
+
+def _selftest_client_stops(d, sv):
+    """valid_stops 对的是客户端装的 .sqlite.gz、客户端的口径：旁边的 .sqlite 与 gz 不同步、或库里有 Journey
+    会当站点用的孤站（location_type=0 且无父站）都要红。旧校验器读 .sqlite、只看 location_type=1，两类都放过。"""
+    n = 0
+    dbc = os.path.join(d, 'client.sqlite')
+    _fixture_db(dbc, [('200010', '2509'), ('200011', '2509')])
+    write_valid_stops(d, dbc, 'buses', sv)
+    assert valid_stops_errors(d, 'buses', dbc, sv) == []
+    # 1) gz 是旧的：.sqlite 后来多了一个父站（如某步改库后忘了重新 gzip）。valid_stops 按 .sqlite 生成，客户端却没有它
+    db = sqlite3.connect(dbc)
+    db.execute("INSERT INTO stops VALUES ('200012', 1, NULL)")
+    db.commit()
+    db.close()
+    write_valid_stops(d, dbc, 'buses', sv)
+    errs = valid_stops_errors(d, 'buses', dbc, sv)
+    assert errs and any('200012' in e and '库里没有' in e for e in errs), errs
+    _gzip_copy(dbc)
+    assert valid_stops_errors(d, 'buses', dbc, sv) == []
+    n += 1
+    # 2) 孤站：Journey 的 ModeIndex 会把它当站点（首段实时会请求它），valid_stops 里却没有
+    db = sqlite3.connect(dbc)
+    db.execute("INSERT INTO stops VALUES ('200013', 0, NULL)")
+    db.commit()
+    db.close()
+    _gzip_copy(dbc)
+    errs = valid_stops_errors(d, 'buses', dbc, sv)
+    assert errs and any('Journey' in e and '200013' in e for e in errs), errs
+    n += 1
+    # 3) 缺 gz
+    os.remove(dbc + '.gz')
+    errs = valid_stops_errors(d, 'buses', dbc, sv)
+    assert errs and any('缺 client.sqlite.gz' in e for e in errs), errs
+    n += 1
     return n
 
 
