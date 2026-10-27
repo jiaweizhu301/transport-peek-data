@@ -298,11 +298,21 @@ def release_map(db, observed):
     None = 只用静态，即 Worker 打包副本 / CLI 的口径）。-> (m, {'added': n, 'unknown': Counter})"""
     m = stop_agencies(db)
     if observed is None:
-        return m, {'added': 0, 'unknown': collections.Counter()}
+        return m, {'added': 0, 'unknown': collections.Counter(), 'fallback': 0}
     sv = db.execute('SELECT static_version FROM meta').fetchone()[0]
     parents = {r[0] for r in db.execute('SELECT stop_id FROM stops WHERE location_type = 1')}
-    m, added, unknown = union_observed(m, observed, parents, sv)
-    return m, {'added': added, 'unknown': unknown}
+    merged, added, unknown = union_observed(m, observed, parents, sv)
+    # review L2：观测对把集合数撑过 MAX_SETS（busops.js 的 Uint8Array）-> 退回只用静态（= 加观测之前的结果），
+    # 由 gen_manifest 打 WARN；不让一份坏观测文件挡住 35 天的 Release。只靠静态就超的，照旧由 stop_ops_errors FAIL。
+    n_sets = n_sets_of(merged)
+    if added and n_sets > MAX_SETS:
+        return m, {'added': 0, 'unknown': unknown, 'fallback': n_sets}
+    return merged, {'added': added, 'unknown': unknown, 'fallback': 0}
+
+
+def n_sets_of(m):
+    """encode(m) 会产生的 sets 个数（'*' 占下标 0；非数字站号不编码）"""
+    return len({'*'} | {_code(v) for s, v in m.items() if is_numeric(s)})
 
 
 def build(db_path, observed=None):
@@ -656,7 +666,61 @@ def selftest():
         n += _selftest_client_stops(d, sv)
         n += _selftest_observed(d, dbp, sv)
         n += _selftest_stop_feeds(d)
+        n += _selftest_sets_cap(d)
+    n += _selftest_workflow_group()
     return n
+
+
+def _selftest_workflow_group():
+    """review L1：observe-bus-ops.yml 的 concurrency group 不许与 daily.yml 相同（同组排队会取消等待中的 daily）。"""
+    import re
+    wf = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.github', 'workflows')
+    def group(f):
+        return re.search(r'^concurrency:\s*\n\s+group:\s*(\S+)',
+                         open(os.path.join(wf, f), encoding='utf-8').read(), re.M)
+    g_obs, g_daily = group('observe-bus-ops.yml'), group('daily.yml')
+    assert g_obs and g_daily and g_obs.group(1) != g_daily.group(1), (g_obs and g_obs.group(1), g_daily and g_daily.group(1))
+    return 1
+
+
+def _selftest_sets_cap(d):
+    """review L2：观测对把 sets 撑过 MAX_SETS -> 退回只用静态 + WARN（不挡 Release）；只靠静态就超 -> 照旧 FAIL。"""
+    import itertools
+    n = 0
+    sv = '20261017-0000'
+    others = sorted(a for a in AGENCY_OP if a != '2509')
+    combos = list(itertools.combinations(others, 2)) + list(itertools.combinations(others, 3))
+    k = MAX_SETS + 4
+    stops = [str(300000 + i) for i in range(k)]
+    # 1) 静态每站只有 GSBC009（2 个集合）；观测给每站一个不同的运营商组合 -> 并后 > MAX_SETS
+    dbp = os.path.join(d, 'cap.sqlite')
+    _fixture_db(dbp, [(st, '2509') for st in stops])
+    obs = os.path.join(d, 'cap-observed.json')
+    write_observed(obs, {st: {a: '2026-10-16' for a in combos[i]} for i, st in enumerate(stops)})
+    merged = union_observed(stop_agencies_of(dbp), load_observed(obs), set(stops), sv)[0]
+    assert len({_code(v) for v in merged.values()}) + 1 > MAX_SETS
+    _, payload, _, _, stats = write_stop_ops(d, dbp, obs)
+    assert payload == build(dbp)[0], 'over cap with observed pairs -> static-only payload'
+    assert stats['fallback'] and stats['fallback'] > MAX_SETS and stats['added'] == 0, stats
+    assert stop_ops_errors(d, dbp, sv, obs) == [], stop_ops_errors(d, dbp, sv, obs)
+    n += 1
+    # 2) 只靠静态就超 MAX_SETS：照旧写出、校验 FAIL（静态超限是真问题，不许被吞掉）
+    dbs = os.path.join(d, 'cap-static.sqlite')
+    _fixture_db(dbs, [(st, a) for i, st in enumerate(stops) for a in ('2509',) + combos[i]])
+    _, payload, _, _, stats = write_stop_ops(d, dbs, None)
+    assert len(payload['sets']) > MAX_SETS and not stats.get('fallback'), (len(payload['sets']), stats)
+    errs = stop_ops_errors(d, dbs, sv, None)
+    assert errs and any('Uint8Array' in e for e in errs), errs
+    n += 1
+    return n
+
+
+def stop_agencies_of(db_path):
+    db = _open(db_path)
+    try:
+        return stop_agencies(db)
+    finally:
+        db.close()
 
 
 def _selftest_client_stops(d, sv):

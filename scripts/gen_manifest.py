@@ -217,6 +217,9 @@ def main():
             # §9.9 stop_ops_miss：实时观测（observed/bus_stop_agencies.json，observe-bus-ops.yml 维护）并进来的对
             print('stop_ops 实时观测并入 %d 个 (站, 运营商)；未知 agency 跳过 %s'
                   % (obs['added'], dict(obs['unknown']) or '-'), flush=True)
+            if obs['fallback']:
+                print('WARN stop_ops 并入实时观测后 sets=%d > %d（Uint8Array）：本次退回只用静态 pattern_stops，'
+                      '查 observed/bus_stop_agencies.json' % (obs['fallback'], stop_ops.MAX_SETS), flush=True)
             if skipped:
                 print('WARN stop_ops 跳过 %d 个非数字站号（Worker 对它们取整份 feed）：%s'
                       % (len(skipped), ', '.join(skipped[:5])), flush=True)

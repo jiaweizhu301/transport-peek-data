@@ -16,8 +16,10 @@ on:
 permissions:
   contents: write        # 提交滚动文件
 
+# review L1：不能与 daily.yml 同组 —— 同组里新排队的运行会取消还在等待的旧运行，晚到的 daily（Release）可能被
+# 一次 observe 静默顶掉。推送竞争由下面的 pull --rebase 处理。
 concurrency:
-  group: daily           # 与 daily.yml 同组：不与它的心跳提交抢推
+  group: observe-bus-ops
   cancel-in-progress: false
 
 jobs:
