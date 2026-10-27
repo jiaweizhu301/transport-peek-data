@@ -4,6 +4,8 @@
 
   python stop_ops.py <buses.sqlite>   # 打印 worker/src/stop-ops.gen.js 的全文（与 worker/scripts/gen-stop-ops.py 逐字节相同）
   python stop_ops.py --selftest
+  python stop_ops.py --observe <observed.json> <feed.pb[.gz]>…   # 已落盘的整份公交 TripUpdates 并进滚动文件
+  python stop_ops.py --observe-live <observed.json>               # CI：拉一次整份公交 feed 并进（observe-bus-ops.yml）
 
 TfNSW 的 v1/gtfs/realtime/buses/<OperatorID> 是整份 buses TripUpdates 按合同拆开的子 feed
 （GSBC009 ≈ 250 KB，整份 ≈ 1.5 MB）。Worker 只取热站所属运营商的子 feed，CPU 降一个量级。
@@ -72,6 +74,183 @@ def stop_agencies(db):
     return m
 
 
+# ---------------------------------------------------------------- 实时观测到的「站 -> 运营商」（M7.5 WP-06 B2，§9.9 stop_ops_miss）
+#
+# 静态 pattern_stops 列不出「只在实时里有」的线路（临时 / 仅实时线路，例：2026-10-16 的 2507_722w 在 2150116、
+# 2503_9049 在 216411）。B2 的 Worker 只拉 stop_ops 列出的运营商子 feed，所以这些行就没了。修法在这里、不在 Worker：
+# 把实时整份公交 TripUpdates 里**观测到**的 (stop_id, agency) 并进来。
+#
+# 生产输入 = 仓里提交的滚动文件 OBSERVED_PATH（{stop_id: {agency_id: 最近一次见到的悉尼日}}），由
+# .github/workflows/observe-bus-ops.yml 白天定时拉一次整份公交 feed（每次 1 个 TfNSW 请求）用 --observe-live 并入、提交。
+# 记 agency（route_id 前缀）而不是 OperatorID：AGENCY_OP 改了，下次建库自动跟着改。
+# 建库时只取「最近一次见到」在 static_version 日期前 OBSERVED_WINDOW_DAYS 天内的对（窗口锚在库的 static_version 上，
+# 不是墙钟 —— validate_assets 重算出逐字节相同的 payload）。
+#
+# 规则（保持 '*' 语义）：
+#   * 已是 '*' 的站不变（'*' 吸收一切）。
+#   * 只并 AGENCY_OP 里有的 agency：观测到一个未知 agency **不**把站变成 '*'。否则 BUS_REST=off 时该站从
+#     「列出的运营商有实时」退成「全部只有时刻表」—— 为了几趟仅实时车把整站的实时都丢掉。未知 agency 只计数告警。
+#   * 只并库里存在的父站（location_type=1）：库外的站号客户端请求不到（valid_stops 会挡），并进来只会撑大 min/max。
+# 多列一个运营商只是 Worker 多拉一份子 feed（行仍按站过滤），少列才丢行 —— 所以只并不减，过期靠窗口。
+
+OBSERVED_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                             'observed', 'bus_stop_agencies.json')
+OBSERVED_WINDOW_DAYS = 35
+# 只收客户端**显示得出来**的 trip：ADDED(1)（DepartureMerger 规则 5：时刻表里没有也插入）与 REPLACEMENT(5)
+# （trip_id 就是静态 id）。SCHEDULED(0) 的仅实时 trip 不收：它的 trip_id 不在客户端静态库里，DepartureMerger
+# 只把 SCHEDULED 行挂到已有班次上，挂不上就丢 —— 列它的运营商只多花 Worker 的子 feed，不多显示一行。
+# 2026-10-16 peak 75 份快照实测：全收 = +1,696 个 (站, 运营商)，几乎全是 DP3 故意裁掉的校车（712）路线，
+# 包括 §9.9 举的 2507_722w / 2503_9049（都是 SCHEDULED、静态库里无此 trip）；只收 ADDED/REPLACEMENT = +8 个。
+OBSERVE_TRIP_RELS = frozenset({1, 5})
+RT_BUSES_URL = 'https://api.transport.nsw.gov.au/v1/gtfs/realtime/buses'
+
+
+def _varint(b, i):
+    r = s = 0
+    while True:
+        x = b[i]
+        i += 1
+        r |= (x & 0x7f) << s
+        if x < 0x80:
+            return r, i
+        s += 7
+
+
+def _fields(b):
+    """protobuf 线格式：逐个 (字段号, 值)；varint -> int，LEN -> memoryview。用不到的定长类型照规则跳过。"""
+    i, n = 0, len(b)
+    while i < n:
+        key, i = _varint(b, i)
+        f, wt = key >> 3, key & 7
+        if wt == 0:
+            v, i = _varint(b, i)
+        elif wt == 2:
+            ln, i = _varint(b, i)
+            v = b[i:i + ln]
+            i += ln
+        elif wt == 1:
+            v = None
+            i += 8
+        elif wt == 5:
+            v = None
+            i += 4
+        else:
+            raise ValueError('protobuf wire type %d 不支持' % wt)
+        yield f, v
+
+
+def feed_stop_agencies(data, rels=None):
+    """GTFS-RT FeedMessage（可 gzip）-> (header.timestamp, {(stop_id, agency_id)})。
+    agency_id = trip.route_id 的「_」前缀（同 AGENCY_OP 的口径）；没有 route_id 或 stop_id 的跳过。
+    rels = 只收 trip 级 schedule_relationship 在其中的 trip（缺省 OBSERVE_TRIP_RELS；'all' = 全收，只供分析）。"""
+    rels = OBSERVE_TRIP_RELS if rels is None else rels
+    import gzip
+    if data[:2] == b'\x1f\x8b':
+        data = gzip.decompress(data)
+    b = memoryview(data)
+    ts = None
+    out = set()
+    for f, v in _fields(b):
+        if f == 1:
+            for hf, hv in _fields(v):
+                if hf == 3:
+                    ts = hv
+        elif f == 2:
+            for ef, ev in _fields(v):
+                if ef != 3:
+                    continue
+                route, rel, stops = None, 0, []
+                for tf, tv in _fields(ev):
+                    if tf == 1:
+                        for df, dv in _fields(tv):
+                            if df == 5:
+                                route = bytes(dv).decode('utf-8', 'replace')
+                            elif df == 4:
+                                rel = dv
+                    elif tf == 2:
+                        for sf, sv in _fields(tv):
+                            if sf == 4:
+                                stops.append(bytes(sv).decode('utf-8', 'replace'))
+                if route and '_' in route and (rels == 'all' or rel in rels):
+                    a = route.split('_', 1)[0]
+                    out.update((s, a) for s in stops if s)
+    return ts, out
+
+
+def sydney_date(ts):
+    """epoch 秒 -> 悉尼当地日 'YYYY-MM-DD'（与 daily.yml 的 tag 同口径）。"""
+    import datetime
+    try:
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo('Australia/Sydney')
+    except Exception:  # 本机没装 tzdata：按 AEST 近似（只记「哪天见过」，差一天无妨；CI 的 ubuntu 有 tzdata）
+        tz = datetime.timezone(datetime.timedelta(hours=10))
+    return datetime.datetime.fromtimestamp(ts, tz).date().isoformat()
+
+
+def load_observed(path=OBSERVED_PATH):
+    if not path or not os.path.exists(path):
+        return {}
+    doc = json.load(open(path, encoding='utf-8'))
+    return doc.get('pairs') or {}
+
+
+def merge_observed(pairs, observed, day, window_days=OBSERVED_WINDOW_DAYS):
+    """把一份 feed 的观测 {(stop, agency)} 记为 day 见过，再删掉比 day 早 window_days 天以上的对。返回新 pairs（不改入参）。"""
+    import datetime
+    out = {s: dict(a) for s, a in pairs.items()}
+    for s, a in observed:
+        prev = out.setdefault(s, {}).get(a)
+        if prev is None or prev < day:
+            out[s][a] = day
+    floor = (datetime.date.fromisoformat(day) - datetime.timedelta(days=window_days)).isoformat()
+    out = {s: {a: d for a, d in ags.items() if d >= floor} for s, ags in out.items()}
+    return {s: dict(sorted(ags.items())) for s, ags in sorted(out.items()) if ags}
+
+
+def write_observed(path, pairs):
+    doc = {'note': 'stop_id -> {agency_id: 最近一次在 TfNSW 实时整份公交 feed 里见到的悉尼日}。'
+                   '由 scripts/stop_ops.py --observe / --observe-live 维护（observe-bus-ops.yml），不要手改。',
+           'window_days': OBSERVED_WINDOW_DAYS, 'pairs': pairs}
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    # 一站一行：每天的 diff 只落在变了的站上
+    lines = ['  %s: %s' % (json.dumps(s), json.dumps(a, separators=(', ', ': '))) for s, a in pairs.items()]
+    with open(path, 'w', encoding='utf-8', newline='\n') as f:
+        f.write('{"note": %s,\n "window_days": %d,\n "pairs": {\n%s\n }}\n'
+                % (json.dumps(doc['note'], ensure_ascii=False), doc['window_days'], ',\n'.join(lines)))
+
+
+def _sv_date(static_version):
+    """'20261020-1305' -> '2026-10-20'"""
+    s = str(static_version)
+    return '%s-%s-%s' % (s[0:4], s[4:6], s[6:8])
+
+
+def union_observed(m, observed, parents, static_version, window_days=OBSERVED_WINDOW_DAYS):
+    """静态 m（stop -> {op|'*'}）并入窗口内的观测对。-> (新 m, 并进来的 (stop, op) 数, 未知 agency 计数)。"""
+    import datetime
+    floor = (datetime.date.fromisoformat(_sv_date(static_version))
+             - datetime.timedelta(days=window_days)).isoformat()
+    out = {s: set(v) for s, v in m.items()}
+    added = 0
+    unknown = collections.Counter()
+    for s, ags in observed.items():
+        if s not in parents:
+            continue
+        for a, day in ags.items():
+            if day < floor:
+                continue
+            op = AGENCY_OP.get(a)
+            if op is None:
+                unknown[a] += 1
+                continue
+            cur = out.setdefault(s, set())
+            if '*' not in cur and op not in cur:
+                cur.add(op)
+                added += 1
+    return out, added, unknown
+
+
 def _code(v):
     return '*' if '*' in v else ','.join(sorted(v))
 
@@ -114,16 +293,28 @@ def encode(m, static_version):
     return out, len(ids)
 
 
-def build(db_path):
-    """-> (payload, 编进去的站数, 跳过的非数字站号列表)"""
+def release_map(db, observed):
+    """Release 资产用的 stop -> 集合：静态 pattern_stops ∪ 窗口内的实时观测（observed = load_observed() 的 pairs；
+    None = 只用静态，即 Worker 打包副本 / CLI 的口径）。-> (m, {'added': n, 'unknown': Counter})"""
+    m = stop_agencies(db)
+    if observed is None:
+        return m, {'added': 0, 'unknown': collections.Counter()}
+    sv = db.execute('SELECT static_version FROM meta').fetchone()[0]
+    parents = {r[0] for r in db.execute('SELECT stop_id FROM stops WHERE location_type = 1')}
+    m, added, unknown = union_observed(m, observed, parents, sv)
+    return m, {'added': added, 'unknown': unknown}
+
+
+def build(db_path, observed=None):
+    """-> (payload, 编进去的站数, 跳过的非数字站号列表, 观测统计)。observed=None 时与原 gen-stop-ops.py 逐字节相同。"""
     db = _open(db_path)
     try:
         sv = db.execute('SELECT static_version FROM meta').fetchone()[0]
-        m = stop_agencies(db)
+        m, stats = release_map(db, observed)
     finally:
         db.close()
     payload, n = encode(m, sv)
-    return payload, n, non_numeric(m)
+    return payload, n, non_numeric(m), stats
 
 
 def lookup(payload, stop_id):
@@ -152,13 +343,14 @@ def render_gen_js(payload, n_stops):
             + 'export const STOP_OPS = %s;\n' % json.dumps(payload, separators=(',', ':')))
 
 
-def write_stop_ops(build_dir, db_path):
-    """-> (路径, payload, 站数, 跳过的非数字站号)。资产 = .gen.js 的 payload 原样转成 JSON。"""
-    payload, n, skipped = build(db_path)
+def write_stop_ops(build_dir, db_path, observed_path=OBSERVED_PATH):
+    """-> (路径, payload, 站数, 跳过的非数字站号, 观测统计)。资产 = .gen.js 同形的 payload 转成 JSON，
+    集合 = 静态 ∪ 滚动文件 observed_path 里窗口内的实时观测（§9.9 stop_ops_miss）。"""
+    payload, n, skipped, stats = build(db_path, load_observed(observed_path))
     p = os.path.join(build_dir, STOP_OPS_FILENAME)
     with open(p, 'w', encoding='utf-8') as f:
         json.dump(payload, f, separators=(',', ':'))
-    return p, payload, n, skipped
+    return p, payload, n, skipped, stats
 
 
 def valid_stops(db_path, mode, static_version):
@@ -212,9 +404,9 @@ def valid_stops_errors(build_dir, mode, db_path, static_version):
     return errs
 
 
-def stop_ops_errors(build_dir, db_path, static_version):
-    """validate_assets 用：stop_ops.json 存在、static_version = 库、与从库重算的 payload 逐字段相等、
-    每个有车停的站解码回自己的集合、sets 不超 Uint8Array。"""
+def stop_ops_errors(build_dir, db_path, static_version, observed_path=OBSERVED_PATH):
+    """validate_assets 用：stop_ops.json 存在、static_version = 库、与从库 + 同一份观测文件重算的 payload 逐字段相等、
+    每个有车停 / 实时观测到的站解码回自己的集合、sets 不超 Uint8Array。"""
     p = os.path.join(build_dir, STOP_OPS_FILENAME)
     if not os.path.exists(p):
         return ['%s: 缺 %s（gen_manifest.py 没跑？）' % (STOP_OPS_MODE, STOP_OPS_FILENAME)]
@@ -231,7 +423,7 @@ def stop_ops_errors(build_dir, db_path, static_version):
                     % (STOP_OPS_FILENAME, len(doc['sets']), MAX_SETS))
     db = _open(db_path)
     try:
-        m = stop_agencies(db)
+        m, _ = release_map(db, load_observed(observed_path))
     finally:
         db.close()
     want, _ = encode(m, static_version)
@@ -276,7 +468,7 @@ def selftest():
         _fixture_db(dbp, [('200010', '2509'), ('200011', '2509'), ('200050', '2606'),
                           ('200060', '2501'), ('200060', '2509'), ('2782193', '2514')],
                     parents_extra=('200099',))
-        payload, ns, skipped = build(dbp)
+        payload, ns, skipped, _ = build(dbp)
         assert ns == 5 and skipped == [] and payload['min'] == 200010 and payload['max'] == 2782193, payload
         assert payload['sets'][0] == '*'
         for s, want in (('200010', 'GSBC009'), ('200011', 'GSBC009'), ('200030', 'GSBC009'),
@@ -309,9 +501,9 @@ def selftest():
 
         # 校验器：好资产 -> 0 错；四类坏资产 -> 各自报错
         sv = '20261017-0000'
-        write_stop_ops(d, dbp)
+        write_stop_ops(d, dbp, None)
         write_valid_stops(d, dbp, 'buses', sv)
-        assert stop_ops_errors(d, dbp, sv) == [] and valid_stops_errors(d, 'buses', dbp, sv) == []
+        assert stop_ops_errors(d, dbp, sv, None) == [] and valid_stops_errors(d, 'buses', dbp, sv) == []
         vs = json.load(open(os.path.join(d, 'valid_stops.buses.json'), encoding='utf-8'))
         assert '200099' in vs['stops'] and '9999990' not in vs['stops'], vs
         n += 1
@@ -319,13 +511,13 @@ def selftest():
         def expect_fail(errs, needle):
             assert errs and any(needle in e for e in errs), (needle, errs)
 
-        expect_fail(stop_ops_errors(d, dbp, 'other-version'), 'static_version')
+        expect_fail(stop_ops_errors(d, dbp, 'other-version', None), 'static_version')
         expect_fail(valid_stops_errors(d, 'buses', dbp, 'other-version'), 'static_version')
         # 手改一段的运营商
         doc = json.load(open(os.path.join(d, STOP_OPS_FILENAME), encoding='utf-8'))
         doc['sets'][1] = 'GSBC001'
         json.dump(doc, open(os.path.join(d, STOP_OPS_FILENAME), 'w', encoding='utf-8'))
-        expect_fail(stop_ops_errors(d, dbp, sv), '重算')
+        expect_fail(stop_ops_errors(d, dbp, sv, None), '重算')
         # 漏一个父站
         vs['stops'].remove('200099')
         json.dump(vs, open(os.path.join(d, 'valid_stops.buses.json'), 'w', encoding='utf-8'))
@@ -333,27 +525,138 @@ def selftest():
         # 资产缺失
         os.remove(os.path.join(d, STOP_OPS_FILENAME))
         os.remove(os.path.join(d, 'valid_stops.buses.json'))
-        expect_fail(stop_ops_errors(d, dbp, sv), '缺 stop_ops.json')
+        expect_fail(stop_ops_errors(d, dbp, sv, None), '缺 stop_ops.json')
         expect_fail(valid_stops_errors(d, 'buses', dbp, sv), '缺 valid_stops.buses.json')
         n += 6
 
         # 库里混进一个非数字站号：照常出资产、校验通过（不挡 Release），该站解码为 '*'
         dbx = os.path.join(d, 'mixed.sqlite')
         _fixture_db(dbx, [('200010', '2509'), ('X200', '2501')])
-        _, _, _, skipped = write_stop_ops(d, dbx)
+        _, _, _, skipped, _ = write_stop_ops(d, dbx, None)
         write_valid_stops(d, dbx, 'buses', sv)
         assert skipped == ['X200'], skipped
-        assert stop_ops_errors(d, dbx, sv) == [] and valid_stops_errors(d, 'buses', dbx, sv) == []
+        assert stop_ops_errors(d, dbx, sv, None) == [] and valid_stops_errors(d, 'buses', dbx, sv) == []
         n += 1
+        n += _selftest_observed(d, dbp, sv)
     return n
+
+
+def _pb(f, v):
+    """测试用的最小 protobuf 编码：int -> varint 字段，bytes/str -> LEN 字段。"""
+    def vi(x):
+        o = b''
+        while True:
+            if x < 0x80:
+                return o + bytes([x])
+            o += bytes([(x & 0x7f) | 0x80])
+            x >>= 7
+    if isinstance(v, int):
+        return vi(f << 3) + vi(v)
+    v = v.encode() if isinstance(v, str) else v
+    return vi(f << 3 | 2) + vi(len(v)) + v
+
+
+def _feed(ts, trips):
+    """trips: [(route_id, trip 级 schedule_relationship, [stop_id…])] -> FeedMessage 字节"""
+    out = _pb(1, _pb(1, '2.0') + _pb(3, ts))
+    for k, (route, rel, stops) in enumerate(trips):
+        td = _pb(1, 't%d' % k) + _pb(4, rel) + _pb(5, route)
+        stus = b''.join(_pb(2, _pb(1, i + 1) + _pb(4, s)) for i, s in enumerate(stops))
+        out += _pb(2, _pb(1, 'e%d' % k) + _pb(3, _pb(1, td) + stus))
+    return out
+
+
+def _selftest_observed(d, dbp, sv):
+    """§9.9 stop_ops_miss：实时观测并进 stop_ops。静态 200010 = GSBC009、200050 = '*'（2606）。"""
+    import gzip
+    n = 0
+    ts = 1760576400  # 2025-10-16 01:00 UTC = 悉尼 2025-10-16 12:00
+    feed = _feed(ts, [('2501_X1', 1, ['200010', '300000']),   # ADDED：并进 200010；300000 不在库里 -> 跳过
+                      ('2507_722w', 0, ['200011']),            # SCHEDULED 仅实时（校车类）：客户端挂不上 -> 不收
+                      ('2503_R', 5, ['200099']),               # REPLACEMENT：收（200099 是无车停的父站）
+                      ('2606_CC', 1, ['200011']),              # 未知 agency：不收进集合、不把站变 '*'
+                      ('2501_X2', 1, ['200050']),              # '*' 站：保持 '*'
+                      ('', 1, ['200010']), ('noprefix', 1, ['200010'])])
+    got_ts, pairs = feed_stop_agencies(gzip.compress(feed))
+    assert got_ts == ts, got_ts
+    assert pairs == {('200010', '2501'), ('300000', '2501'), ('200099', '2503'), ('200011', '2606'),
+                     ('200050', '2501')}, pairs
+    assert ('200011', '2507') in feed_stop_agencies(feed, 'all')[1]
+    n += 1
+    # 滚动文件：记日子、窗口外的删掉、重复观测只前移日期
+    day = sydney_date(ts)
+    assert day == '2025-10-16', day
+    old = {'200011': {'2502': '2025-09-01'}, '200010': {'2501': '2025-10-01'}}
+    merged = merge_observed(old, pairs, day)
+    assert merged['200010'] == {'2501': day} and '200011' in merged and '2502' not in merged['200011'], merged
+    n += 1
+    obs = os.path.join(d, 'observed.json')
+    write_observed(obs, dict(merged, **{'200060': {'2510': '2025-01-01'}}))   # 窗口外：不并
+    # 静态库 static_version 20261017 -> 窗口锚在 2026-10-17；把观测日期挪到 2026-10 让它们在窗口内
+    pairs26 = {s: {a: '2026-10-16' if dt == day else dt for a, dt in ags.items()}
+               for s, ags in load_observed(obs).items()}
+    write_observed(obs, pairs26)
+    p, payload, _, _, stats = write_stop_ops(d, dbp, obs)
+    assert lookup(payload, '200010') == 'GSBC001,GSBC009', lookup(payload, '200010')
+    assert lookup(payload, '200011') == 'GSBC009'          # 2606 未知、2507 SCHEDULED：都不进
+    assert lookup(payload, '200050') == '*'                # '*' 吸收一切
+    assert lookup(payload, '200099') == 'GSBC003'          # REPLACEMENT 在无车停的父站
+    assert lookup(payload, '200060') == 'GSBC001,GSBC009'  # 窗口外的 2510 不进
+    assert stats['added'] == 2 and stats['unknown'] == {'2606': 1}, stats
+    n += 1
+    # 没有观测文件 = 与静态逐字节相同（Worker 打包副本 / CLI 的口径不变）
+    assert build(dbp, {})[0] == build(dbp)[0]
+    n += 1
+    # 校验器：同一份观测文件 -> 0 错；拿别的观测文件（或不用）重算 -> 报「重算」
+    assert stop_ops_errors(d, dbp, sv, obs) == [], stop_ops_errors(d, dbp, sv, obs)
+    errs = stop_ops_errors(d, dbp, sv, None)
+    assert errs and any('重算' in e for e in errs), errs
+    n += 1
+    return n
+
+
+def observe_files(path, feeds):
+    """把若干份已落盘的整份公交 TripUpdates（.pb / .pb.gz）并进滚动文件。-> 新增 / 前移的对数"""
+    pairs = load_observed(path)
+    before = json.dumps(pairs, sort_keys=True)
+    for fp in feeds:
+        ts, obs = feed_stop_agencies(open(fp, 'rb').read())
+        if not ts:
+            raise SystemExit('%s: FeedHeader 没有 timestamp' % fp)
+        pairs = merge_observed(pairs, obs, sydney_date(ts))
+    write_observed(path, pairs)
+    return before != json.dumps(pairs, sort_keys=True), sum(len(v) for v in pairs.values())
+
+
+def observe_live(path):
+    """CI（observe-bus-ops.yml）：拉 **一次** 整份公交 TripUpdates（1 个 TfNSW 请求，只在内存里），并进滚动文件。
+    key 同 fetch_gtfs.py（TFNSW_API_KEY），永不打印、永不写盘；feed 也不落盘。"""
+    import urllib.request
+    from fetch_gtfs import api_key
+    req = urllib.request.Request(RT_BUSES_URL, headers={'Authorization': 'apikey ' + api_key(),
+                                                        'User-Agent': 'transport-peek-data/observe-bus-ops'})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        data = r.read()
+    ts, obs = feed_stop_agencies(data)
+    if not ts:
+        raise SystemExit('实时 feed 没有 header.timestamp')
+    pairs = merge_observed(load_observed(path), obs, sydney_date(ts))
+    write_observed(path, pairs)
+    print('observe: feed %s，%d 个 ADDED/REPLACEMENT (站, agency)，滚动文件共 %d 对'
+          % (sydney_date(ts), len(obs), sum(len(v) for v in pairs.values())))
 
 
 if __name__ == '__main__':
     if sys.argv[1:] == ['--selftest']:
         print('stop_ops selftest ok，%d 组' % selftest())
+    elif sys.argv[1:2] == ['--observe'] and len(sys.argv) >= 4:
+        changed, total = observe_files(sys.argv[2], sys.argv[3:])
+        print('observe: %d 份 feed，滚动文件共 %d 对%s' % (len(sys.argv) - 3, total, '' if changed else '（无变化）'))
+    elif sys.argv[1:2] == ['--observe-live'] and len(sys.argv) == 3:
+        observe_live(sys.argv[2])
     elif len(sys.argv) == 2:
         try:
-            payload, n, skipped = build(sys.argv[1])
+            payload, n, skipped, _ = build(sys.argv[1])
         except ValueError as e:
             sys.exit(str(e))
         if skipped:

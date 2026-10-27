@@ -206,7 +206,10 @@ def main():
         print('%s  %d 个父站  %d 字节' % (os.path.basename(vp), len(vs['stops']), os.path.getsize(vp)),
               flush=True)
         if mode == stop_ops.STOP_OPS_MODE:
-            op, payload, n, skipped = stop_ops.write_stop_ops(a.build_dir, db_path)
+            op, payload, n, skipped, obs = stop_ops.write_stop_ops(a.build_dir, db_path)
+            # §9.9 stop_ops_miss：实时观测（observed/bus_stop_agencies.json，observe-bus-ops.yml 维护）并进来的对
+            print('stop_ops 实时观测并入 %d 个 (站, 运营商)；未知 agency 跳过 %s'
+                  % (obs['added'], dict(obs['unknown']) or '-'), flush=True)
             if skipped:
                 print('WARN stop_ops 跳过 %d 个非数字站号（Worker 对它们取整份 feed）：%s'
                       % (len(skipped), ', '.join(skipped[:5])), flush=True)
