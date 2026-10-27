@@ -373,6 +373,81 @@ def write_valid_stops(build_dir, db_path, mode, static_version):
     return p, doc
 
 
+# ---------------------------------------------------------------- 轻轨：父站 -> 实时子 feed（B2，contract §9.2）
+#
+# 与 Worker 的 worker/scripts/gen-lr-feeds.py（-> worker/src/lr-feeds.gen.js 的 LR_FEEDS_BY_STOP）同一算法、同一形状：
+# 有车停的站取 coalesce(parent_station, stop_id)，agency LR -> innerwest、SLR -> cbdandsoutheast、其它 -> parramatta；
+# 值是排好序的 feed 键列表（Worker 的 feed 名，refresh.js LR_FEEDS）。每天随库重算，Worker 像 stop_ops 一样同步，
+# 不再只信部署时打包、只对一个 static_version 有效的副本。不进 manifest（同 stop_ops.json）。
+
+STOP_FEEDS_MODE = 'lightrail'
+LR_FEEDS = ('rt:lr/innerwest', 'rt:lr/cbdandsoutheast', 'rt:lr/parramatta')
+LR_AGENCY_FEED = {'LR': 'rt:lr/innerwest', 'SLR': 'rt:lr/cbdandsoutheast'}
+LR_OTHER_FEED = 'rt:lr/parramatta'
+
+
+def stop_feeds_filename(mode=STOP_FEEDS_MODE):
+    return 'stop_feeds.%s.json' % mode
+
+
+def lr_stop_feeds(db):
+    """-> {parent_stop_id: [feed…]}，键按字符串序、值排序（= gen-lr-feeds.py 的 out）。"""
+    m = {}
+    for stop, agency in db.execute(
+            "SELECT DISTINCT coalesce(nullif(s.parent_station, ''), s.stop_id), r.agency_id FROM pattern_stops ps"
+            " JOIN stop_patterns sp ON sp.pattern_id = ps.pattern_id JOIN routes r ON r.route_id = sp.route_id"
+            " JOIN stops s ON s.stop_id = ps.stop_id"):
+        m.setdefault(stop, set()).add(LR_AGENCY_FEED.get(agency, LR_OTHER_FEED))
+    return {k: sorted(v) for k, v in sorted(m.items())}
+
+
+def write_stop_feeds(build_dir, db_path, static_version, mode=STOP_FEEDS_MODE):
+    db = _open(db_path)
+    try:
+        stops = lr_stop_feeds(db)
+    finally:
+        db.close()
+    doc = {'mode': mode, 'static_version': static_version, 'stops': stops}
+    p = os.path.join(build_dir, stop_feeds_filename(mode))
+    with open(p, 'w', encoding='utf-8') as f:
+        json.dump(doc, f, separators=(',', ':'))
+    return p, doc
+
+
+def stop_feeds_errors(build_dir, db_path, static_version, mode=STOP_FEEDS_MODE):
+    """validate_assets 用：stop_feeds.lightrail.json 存在、mode/static_version 对、与从库重算逐字段相等、
+    值只含三条 LR feed 且非空有序、每个键都是 valid_stops 里的父站。"""
+    p = os.path.join(build_dir, stop_feeds_filename(mode))
+    name = os.path.basename(p)
+    if not os.path.exists(p):
+        return ['%s: 缺 %s（gen_manifest.py 没跑？）' % (mode, name)]
+    doc = json.load(open(p, encoding='utf-8'))
+    errs = []
+    if list(doc) != ['mode', 'static_version', 'stops']:
+        return ['%s: 键 %s != [mode, static_version, stops]' % (name, list(doc))]
+    if doc['mode'] != mode or doc['static_version'] != static_version:
+        errs.append('%s: mode/static_version 对不上（%r/%r）' % (name, doc['mode'], doc['static_version']))
+    stops = doc['stops'] if isinstance(doc['stops'], dict) else {}
+    bad = sorted(s for s, v in stops.items()
+                 if not isinstance(v, list) or not v or v != sorted(set(v)) or any(f not in LR_FEEDS for f in v))
+    if bad:
+        errs.append('%s: %d 个站的 feed 列表为空 / 无序 / 有未知 feed：%s' % (name, len(bad), ', '.join(bad[:5])))
+    db = _open(db_path)
+    try:
+        want = lr_stop_feeds(db)
+        parents = {r[0] for r in db.execute('SELECT stop_id FROM stops WHERE location_type = 1')}
+    finally:
+        db.close()
+    if stops != want:
+        errs.append('%s 与从库重算的结果不同（被手改过，或生成器与校验器漂移）' % name)
+    np = sorted(set(stops) - parents)
+    if np:
+        errs.append('%s: %d 个键不是库里的父站（Worker 按父站查）：%s' % (name, len(np), ', '.join(np[:5])))
+    if not stops:
+        errs.append('%s 是空表' % name)
+    return errs
+
+
 def valid_stops_errors(build_dir, mode, db_path, static_version):
     """validate_assets 用：valid_stops.<mode>.json 存在、mode/static_version 对、与库里父站集合逐个相等、有序无重。"""
     p = os.path.join(build_dir, valid_stops_filename(mode))
@@ -538,6 +613,51 @@ def selftest():
         assert stop_ops_errors(d, dbx, sv, None) == [] and valid_stops_errors(d, 'buses', dbx, sv) == []
         n += 1
         n += _selftest_observed(d, dbp, sv)
+        n += _selftest_stop_feeds(d)
+    return n
+
+
+def _selftest_stop_feeds(d):
+    """轻轨 stop_feeds：子站归到父站、agency -> feed、多 agency 的站列多条，校验器四类坏资产各报错。"""
+    n = 0
+    dbp = os.path.join(d, 'lightrail.sqlite')
+    db = sqlite3.connect(dbp)
+    db.executescript(
+        'CREATE TABLE meta (static_version TEXT);'
+        'CREATE TABLE stops (stop_id TEXT, location_type INTEGER, parent_station TEXT);'
+        'CREATE TABLE routes (route_id TEXT, agency_id TEXT);'
+        'CREATE TABLE stop_patterns (pattern_id INTEGER, route_id TEXT);'
+        'CREATE TABLE pattern_stops (pattern_id INTEGER, stop_id TEXT);'
+        "INSERT INTO meta VALUES ('20261020-1305');"
+        "INSERT INTO stops VALUES ('P1', 1, NULL), ('P1a', 0, 'P1'), ('P2', 1, ''), ('P3', 1, NULL), ('P4', 1, NULL);"
+        "INSERT INTO routes VALUES ('IWLR-191', 'LR'), ('L2', 'SLR'), ('L4', 'PLR');"
+        "INSERT INTO stop_patterns VALUES (1, 'IWLR-191'), (2, 'L2'), (3, 'L4');"
+        "INSERT INTO pattern_stops VALUES (1, 'P1a'), (2, 'P2'), (2, 'P3'), (3, 'P3');")
+    db.commit()
+    db.close()
+    sv = '20261020-1305'
+    p, doc = write_stop_feeds(d, dbp, sv)
+    assert os.path.basename(p) == 'stop_feeds.lightrail.json'
+    assert doc == {'mode': 'lightrail', 'static_version': sv, 'stops': {
+        'P1': ['rt:lr/innerwest'], 'P2': ['rt:lr/cbdandsoutheast'],
+        'P3': ['rt:lr/cbdandsoutheast', 'rt:lr/parramatta']}}, doc      # P4 无车停：不列（Worker 回落三条）
+    assert stop_feeds_errors(d, dbp, sv) == []
+    n += 1
+
+    def expect_fail(errs, needle):
+        assert errs and any(needle in e for e in errs), (needle, errs)
+
+    expect_fail(stop_feeds_errors(d, dbp, 'other'), 'static_version')
+    bad = dict(doc, stops=dict(doc['stops'], P1=['rt:lr/somewhere']))
+    json.dump(bad, open(p, 'w', encoding='utf-8'))
+    expect_fail(stop_feeds_errors(d, dbp, sv), '未知 feed')
+    bad = dict(doc, stops=dict(doc['stops'], P1a=['rt:lr/innerwest']))
+    json.dump(bad, open(p, 'w', encoding='utf-8'))
+    expect_fail(stop_feeds_errors(d, dbp, sv), '不是库里的父站')
+    expect_fail(stop_feeds_errors(d, dbp, sv), '重算')
+    os.remove(p)
+    expect_fail(stop_feeds_errors(d, dbp, sv), '缺 stop_feeds.lightrail.json')
+    n += 4
     return n
 
 

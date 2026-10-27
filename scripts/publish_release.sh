@@ -251,9 +251,9 @@ upload "${BUILD_DIR}/config.json"
 upload "${BUILD_DIR}/non_revenue_headsigns.json"
 # 解析规则（PLATFORM_RE 等）：同上，客户端 Regex(读到的字符串) 直接用
 upload "${BUILD_DIR}/parsing_rules.json"
-# XBE-02：stop_ops.json（公交 STOP_OPS）+ valid_stops.<mode>.json（有效站表），WP-06 的 Worker 按同源 URL 取
+# XBE-02：stop_ops.json（公交 STOP_OPS）+ valid_stops.<mode>.json（有效站表）+ stop_feeds.lightrail.json（轻轨站 -> 实时子 feed，B2），WP-06 的 Worker 按同源 URL 取
 for f in "${BUILD_DIR}"/*.sqlite.gz "${BUILD_DIR}"/stop_parents.*.json "${BUILD_DIR}"/shapes.*.bin.gz \
-         "${BUILD_DIR}"/stop_ops.json "${BUILD_DIR}"/valid_stops.*.json; do
+         "${BUILD_DIR}"/stop_ops.json "${BUILD_DIR}"/valid_stops.*.json "${BUILD_DIR}"/stop_feeds.*.json; do
   if [ -e "$f" ]; then upload "$f"; fi
 done
 if [ "$uploaded" -lt 7 ]; then

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """D3 · 生成 Release 资产：manifest.json / config.json / stop_parents.<mode>.json /
-valid_stops.<mode>.json / stop_ops.json / non_revenue_headsigns.json / parsing_rules.json。
+valid_stops.<mode>.json / stop_ops.json / stop_feeds.lightrail.json / non_revenue_headsigns.json / parsing_rules.json。
 
   python gen_manifest.py <build_dir> --tag <tag> [--repo owner/name] [--channel stable|prerelease]
 
@@ -205,6 +205,11 @@ def main():
         vp, vs = stop_ops.write_valid_stops(a.build_dir, db_path, mode, sv)
         print('%s  %d 个父站  %d 字节' % (os.path.basename(vp), len(vs['stops']), os.path.getsize(vp)),
               flush=True)
+        if mode == stop_ops.STOP_FEEDS_MODE:
+            # B2（contract §9.2）：轻轨父站 -> 实时子 feed，与 Worker gen-lr-feeds.py 同一算法
+            fp, fd = stop_ops.write_stop_feeds(a.build_dir, db_path, sv)
+            print('%s  %d 个父站  %d 字节' % (os.path.basename(fp), len(fd['stops']), os.path.getsize(fp)),
+                  flush=True)
         if mode == stop_ops.STOP_OPS_MODE:
             op, payload, n, skipped, obs = stop_ops.write_stop_ops(a.build_dir, db_path)
             # §9.9 stop_ops_miss：实时观测（observed/bus_stop_agencies.json，observe-bus-ops.yml 维护）并进来的对

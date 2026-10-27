@@ -138,12 +138,15 @@ def main():
         errs = stop_ops.valid_stops_errors(d, mode, db_path, static_version)
         if mode == stop_ops.STOP_OPS_MODE:
             errs += stop_ops.stop_ops_errors(d, db_path, static_version)
+        if mode == stop_ops.STOP_FEEDS_MODE:
+            errs += stop_ops.stop_feeds_errors(d, db_path, static_version)
         if errs:
             fails += errs
             continue
         print('OK   %s: gz %.2f MB / sha256 / meta / stop_parents / valid_stops%s 全部对账一致'
               % (mode, feed['size_bytes'] / 1e6,
-                 ' / stop_ops' if mode == stop_ops.STOP_OPS_MODE else ''))
+                 ' / stop_ops' if mode == stop_ops.STOP_OPS_MODE else
+                 ' / stop_feeds' if mode == stop_ops.STOP_FEEDS_MODE else ''))
 
     # M6 §6.1：shapes 顶层键。每项与盘上 .bin.gz、与该 mode 的 feeds 版本和库里的 route 逐项对账
     for mode, entry in manifest.get('shapes', {}).items():
