@@ -30,6 +30,28 @@ RAIL_MODES = ('sydneytrains', 'metro', 'lightrail')
 MAX_VEHICLE_ROUTES = 20   # 契约 3 v2.1：vehicles= 同 mode 1–20 个 route_id；班次详情按整条线的 routeKey 一次请求
 ANCHORS = {'n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'}
 COLOUR_RE = re.compile(r'^#[0-9A-Fa-f]{6}$')
+# M7.5 WP-10 T1（GAP-01）：火车施工变体（T6_1c、APS_2d…）按「线代码_方向+字母」的前缀归到唯一拥有该前缀的线。
+# 与 app `SchematicNetwork.lineForRoute` 同口径：先精确；只火车走前缀；前缀在两条线上 = 歧义不归；ignored 永不归。
+PREFIX_MODES = ('sydneytrains',)
+VARIANT_RE = re.compile(r'^([A-Za-z0-9]+)_[0-9]+[a-z]$')
+
+
+def variant_prefix(route_id):
+    m = VARIANT_RE.match(route_id)
+    return m.group(1) if m else None
+
+
+def line_for_route(doc, mode, route_id):
+    """返回线 id 列表：精确命中的全部线；没有精确命中时火车按前缀找唯一一条线。"""
+    exact = [ln['id'] for ln in doc['lines'] if ln['mode'] == mode and route_id in ln['route_ids']]
+    if exact or mode not in PREFIX_MODES or route_id in doc.get('ignored_route_ids', []):
+        return exact
+    pre = variant_prefix(route_id)
+    if pre is None:
+        return []
+    owners = [ln['id'] for ln in doc['lines']
+              if ln['mode'] == mode and any(variant_prefix(r) == pre for r in ln['route_ids'])]
+    return owners if len(owners) == 1 else []
 
 
 def structural_errors(doc):
@@ -174,15 +196,32 @@ def static_warnings(doc, build_dir):
             continue
         routes = {r[0]: r[1] for r in db.execute('SELECT route_id, route_color FROM routes')}
         for rid in sorted(routes):
-            got = owner.get((m, rid), [])
             if rid in ignored:
                 continue
+            got = owner.get((m, rid)) or line_for_route(doc, m, rid)
             if len(got) != 1:
                 warns.append('R2 %s/%s 映射到 %d 条线 %s（应恰好 1 条，或进 ignored_route_ids）'
                              % (m, rid, len(got), got))
+        # 反向：线上写的 route 本周不在库里。火车变体来来去去（施工周才有）：同前缀还有别的 route 在库里就不算网络变了
+        live_prefixes = {variant_prefix(r) for r in routes} - {None} if m in PREFIX_MODES else set()
         for (mm, rid), lids in sorted(owner.items()):
-            if mm == m and rid not in routes:
+            if mm == m and rid not in routes and variant_prefix(rid) not in live_prefixes:
                 warns.append('R2 %s: route_id %s 在静态库里已不存在（网络变了？）' % (','.join(lids), rid))
+        # R4（WP-10 T1）：每条有线可归的 route，它所有 pattern 经过的父站都要在线路图上（有站、有标签）。
+        # 漏站 = 整段线在图上缺（L4 当初就是这样整条没画）。
+        on_map = {pid for s in stations.values() for pid in s['parents'].get(m, [])
+                  if (s.get('label') or {}).get('text')}
+        missing = {}
+        for rid, parent in db.execute(
+                'SELECT DISTINCT sp.route_id, COALESCE(s.parent_station, s.stop_id) FROM stop_patterns sp '
+                'JOIN pattern_stops ps ON ps.pattern_id = sp.pattern_id JOIN stops s ON s.stop_id = ps.stop_id'):
+            if rid in ignored or len(owner.get((m, rid)) or line_for_route(doc, m, rid)) != 1:
+                continue
+            if parent not in on_map:
+                missing.setdefault(parent, set()).add(rid)
+        for parent in sorted(missing):
+            warns.append('R4 %s/%s 有车经过（%s），但线路图上没有这个站（或没标签）'
+                         % (m, parent, ','.join(sorted(missing[parent]))))
         # 颜色：线的 colour 与它每个 route 的 route_color 一致
         for ln in doc['lines']:
             if ln['mode'] != m:
@@ -284,7 +323,9 @@ def _selftest_db(path):
                        ('c1', 'C P1', 'c p1', 0, 0, 0, 'P_C')])
     db.executemany('INSERT INTO routes VALUES (?,?,?,?,?,?,?)', [
         ('R1', 'AG', 'T9', None, 2, 'D11F2F', 'FFFFFF'), ('R2', 'AG', 'T9', None, 2, 'D11F2F', 'FFFFFF'),
-        ('RTTA_DEF', 'AG', 'RTTA', None, 2, None, None)])
+        ('RTTA_DEF', 'AG', 'RTTA', None, 2, None, None),
+        # WP-10 T1：T6 只有 T6_1a 写在线上；T6_1c = 施工变体（前缀归 T6），线上的 T6_2b 本周不在库
+        ('T6_1a', 'AG', 'T6', None, 2, '7D3F21', 'FFFFFF'), ('T6_1c', 'AG', 'T6', None, 2, '7D3F21', 'FFFFFF')])
     db.execute('INSERT INTO stop_patterns VALUES (1, ?, 3)', ('R1',))
     db.executemany('INSERT INTO pattern_stops VALUES (1, ?, ?, 0, 0)', [(1, 'a1'), (2, 'b1'), (3, 'c1')])
     db.commit()
@@ -304,7 +345,10 @@ def _selftest_doc():
              'label': {'text': 'C', 'anchor': 'e', 'dx': 6, 'dy': 0}}],
         'lines': [{'id': 'T9', 'mode': 'sydneytrains', 'route_ids': ['R1', 'R2'],
                    'colour': '#D11F2F', 'text_colour': '#FFFFFF',
-                   'paths': [{'stations': ['a', 'b', 'c'], 'track': 0}]}],
+                   'paths': [{'stations': ['a', 'b', 'c'], 'track': 0}]},
+                  {'id': 'T6', 'mode': 'sydneytrains', 'route_ids': ['T6_1a', 'T6_2b'],
+                   'colour': '#7D3F21', 'text_colour': '#FFFFFF',
+                   'paths': [{'stations': ['a', 'b'], 'track': 1}]}],
         'ignored_route_ids': ['RTTA_DEF']}
 
 
@@ -402,6 +446,37 @@ def selftest():
         assert any(x.startswith('布局 T9') for x in static_warnings(bad, d))
         bad['lines'][0]['paths'][0]['via'] = {'1': [[300, 100]]}
         assert not any(x.startswith('布局') for x in static_warnings(bad, d))
+        n += 1
+        # WP-10 T1（GAP-01）：前缀规则 = app lineForRoute 同口径
+        assert line_for_route(good, 'sydneytrains', 'T6_1c') == ['T6']
+        assert line_for_route(good, 'sydneytrains', 'R1') == ['T9']
+        assert line_for_route(good, 'sydneytrains', 'CCN_1a') == []          # 没人拥有的前缀
+        assert line_for_route(good, 'metro', 'T6_1c') == []                  # 只火车走前缀
+        amb = copy.deepcopy(good)
+        amb['lines'][0]['route_ids'].append('T6_9z')                         # T6 前缀出现在两条线上 → 不猜
+        assert line_for_route(amb, 'sydneytrains', 'T6_1c') == []
+        lr = {'lines': [{'id': 'L2', 'mode': 'lightrail', 'route_ids': ['1001_L2']}], 'ignored_route_ids': ['1001_LX']}
+        assert line_for_route(lr, 'lightrail', '1001_L2') == ['L2'] and line_for_route(lr, 'lightrail', '1001_LX') == []
+        # 轻轨线唯一拥有 Z 前缀，变体 Z_1b 仍不得走前缀（钉住「只火车」这道 mode 闸，WP-10 T1 review m-1）
+        lrz = {'lines': [{'id': 'LZ', 'mode': 'lightrail', 'route_ids': ['Z_1a']}], 'ignored_route_ids': []}
+        assert line_for_route(lrz, 'lightrail', 'Z_1a') == ['LZ'] and line_for_route(lrz, 'lightrail', 'Z_1b') == []
+        ign = copy.deepcopy(good)
+        ign['ignored_route_ids'].append('T6_1c')
+        assert line_for_route(ign, 'sydneytrains', 'T6_1c') == []
+        n += 1
+        # 前缀被拿掉 → 变体又报 R2（0 条线），线上的死 id 也报「已不存在」
+        bad = copy.deepcopy(good)
+        bad['lines'][1]['route_ids'] = ['T6X_1a']
+        w = static_warnings(bad, d)
+        assert any(x.startswith('R2 sydneytrains/T6_1c 映射到 0 条线') for x in w), w
+        assert any('T6X_1a 在静态库里已不存在' in x for x in w), w
+        n += 1
+        # R4：有车经过的父站必须在图上（c 整站拿掉 → R4 报 P_C）
+        bad = copy.deepcopy(good)
+        bad['stations'] = [x for x in bad['stations'] if x['id'] != 'c']
+        bad['lines'][0]['paths'][0]['stations'] = ['a', 'b']
+        w = static_warnings(bad, d)
+        assert any(x.startswith('R4 sydneytrains/P_C 有车经过（R1）') for x in w), w
         n += 1
         # 结构错误（退出码 2 那一类）
         for mutate, expect in (
