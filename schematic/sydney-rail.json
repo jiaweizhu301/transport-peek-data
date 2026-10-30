@@ -1,7 +1,7 @@
 {
  "format": 1,
  "network": "sydney-rail",
- "data_version": "2026-09-26",
+ "data_version": "2026-10-29",
  "source": "TfNSW 官方网络图拓扑（手工布点）",
  "bounds": [
   0,
@@ -237,6 +237,22 @@
    "y": 210
   },
   {
+   "id": "benaud_oval",
+   "parents": {
+    "lightrail": [
+     "2151155"
+    ]
+   },
+   "label": {
+    "text": "Benaud Oval",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 620,
+   "y": 750
+  },
+  {
    "id": "berala",
    "parents": {
     "sydneytrains": [
@@ -468,6 +484,22 @@
    "y": 2000
   },
   {
+   "id": "carlingford",
+   "parents": {
+    "lightrail": [
+     "2118249"
+    ]
+   },
+   "label": {
+    "text": "Carlingford",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 700,
+   "y": 660
+  },
+  {
    "id": "carlton",
    "parents": {
     "sydneytrains": [
@@ -640,6 +672,22 @@
    "y": 1120
   },
   {
+   "id": "childrens_hospital",
+   "parents": {
+    "lightrail": [
+     "2145553"
+    ]
+   },
+   "label": {
+    "text": "Children’s Hospital",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 580,
+   "y": 770
+  },
+  {
    "id": "chinatown",
    "parents": {
     "lightrail": [
@@ -655,6 +703,22 @@
     "dy": 0
    },
    "interchange": true
+  },
+  {
+   "id": "church_street",
+   "parents": {
+    "lightrail": [
+     "2150135"
+    ]
+   },
+   "label": {
+    "text": "Church Street",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 620,
+   "y": 810
   },
   {
    "id": "circular_quay",
@@ -888,6 +952,22 @@
    "y": 580
   },
   {
+   "id": "dundas",
+   "parents": {
+    "lightrail": [
+     "211753"
+    ]
+   },
+   "label": {
+    "text": "Dundas",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 700,
+   "y": 770
+  },
+  {
    "id": "east_hills",
    "parents": {
     "sydneytrains": [
@@ -1087,6 +1167,22 @@
    "x": 480,
    "y": 1010,
    "interchange": true
+  },
+  {
+   "id": "fennell_street",
+   "parents": {
+    "lightrail": [
+     "2150163"
+    ]
+   },
+   "label": {
+    "text": "Fennell Street",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 620,
+   "y": 770
   },
   {
    "id": "flemington",
@@ -2194,6 +2290,22 @@
    "interchange": true
   },
   {
+   "id": "ngara",
+   "parents": {
+    "lightrail": [
+     "2151158"
+    ]
+   },
+   "label": {
+    "text": "Ngara",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 600,
+   "y": 750
+  },
+  {
    "id": "normanhurst",
    "parents": {
     "sydneytrains": [
@@ -2359,6 +2471,9 @@
    "parents": {
     "sydneytrains": [
      "215020"
+    ],
+    "lightrail": [
+     "2150132"
     ]
    },
    "label": {
@@ -2453,6 +2568,22 @@
    "x": 1050,
    "y": 1220,
    "interchange": true
+  },
+  {
+   "id": "prince_alfred_square",
+   "parents": {
+    "lightrail": [
+     "2150149"
+    ]
+   },
+   "label": {
+    "text": "Prince Alfred Square",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 620,
+   "y": 790
   },
   {
    "id": "pymble",
@@ -2653,6 +2784,22 @@
    "y": 1480
   },
   {
+   "id": "robin_thomas",
+   "parents": {
+    "lightrail": [
+     "2150128"
+    ]
+   },
+   "label": {
+    "text": "Robin Thomas",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 13
+   },
+   "x": 640,
+   "y": 830
+  },
+  {
    "id": "rockdale",
    "parents": {
     "sydneytrains": [
@@ -2684,6 +2831,22 @@
    "x": 360,
    "y": 710,
    "interchange": true
+  },
+  {
+   "id": "rosehill_gardens",
+   "parents": {
+    "lightrail": [
+     "214214"
+    ]
+   },
+   "label": {
+    "text": "Rosehill Gardens",
+    "anchor": "s",
+    "dx": 0,
+    "dy": 13
+   },
+   "x": 680,
+   "y": 830
   },
   {
    "id": "roseville",
@@ -3005,6 +3168,22 @@
    "y": 730
   },
   {
+   "id": "telopea",
+   "parents": {
+    "lightrail": [
+     "211750"
+    ]
+   },
+   "label": {
+    "text": "Telopea",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 700,
+   "y": 720
+  },
+  {
    "id": "tempe",
    "parents": {
     "sydneytrains": [
@@ -3088,6 +3267,22 @@
     "dy": 0
    },
    "interchange": true
+  },
+  {
+   "id": "tramway_avenue",
+   "parents": {
+    "lightrail": [
+     "2150115"
+    ]
+   },
+   "label": {
+    "text": "Tramway Avenue",
+    "anchor": "n",
+    "dx": 0,
+    "dy": -13
+   },
+   "x": 660,
+   "y": 830
   },
   {
    "id": "turramurra",
@@ -3419,6 +3614,9 @@
    "parents": {
     "sydneytrains": [
      "214510"
+    ],
+    "lightrail": [
+     "214510"
     ]
    },
    "label": {
@@ -3430,6 +3628,22 @@
    "x": 570,
    "y": 800,
    "interchange": true
+  },
+  {
+   "id": "westmead_hospital",
+   "parents": {
+    "lightrail": [
+     "2145584"
+    ]
+   },
+   "label": {
+    "text": "Westmead Hospital",
+    "anchor": "w",
+    "dx": -10,
+    "dy": 0
+   },
+   "x": 570,
+   "y": 780
   },
   {
    "id": "windsor",
@@ -3533,6 +3747,22 @@
    },
    "x": 690,
    "y": 1120
+  },
+  {
+   "id": "yallamundi",
+   "parents": {
+    "lightrail": [
+     "211656"
+    ]
+   },
+   "label": {
+    "text": "Yallamundi",
+    "anchor": "e",
+    "dx": 10,
+    "dy": 0
+   },
+   "x": 700,
+   "y": 810
   },
   {
    "id": "yennora",
@@ -3654,6 +3884,38 @@
       "juniors_kingsford"
      ],
      "track": 7
+    }
+   ]
+  },
+  {
+   "id": "L4",
+   "mode": "lightrail",
+   "route_ids": [
+    "ISD-17-6720_L4"
+   ],
+   "colour": "#BB2043",
+   "text_colour": "#FFFFFF",
+   "paths": [
+    {
+     "stations": [
+      "westmead",
+      "westmead_hospital",
+      "childrens_hospital",
+      "ngara",
+      "benaud_oval",
+      "fennell_street",
+      "prince_alfred_square",
+      "church_street",
+      "parramatta",
+      "robin_thomas",
+      "tramway_avenue",
+      "rosehill_gardens",
+      "yallamundi",
+      "dundas",
+      "telopea",
+      "carlingford"
+     ],
+     "track": 0
     }
    ]
   },
